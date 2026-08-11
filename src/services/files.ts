@@ -8,8 +8,10 @@
  */
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library';
 import { Platform } from 'react-native';
+// NOTE: expo-media-library is imported lazily inside saveToMediaLibrary — it has
+// no web implementation and throws at import time on web, which would take down
+// the whole app (files.ts is imported everywhere).
 import type { OutputFormat } from '@/types';
 import { FORMAT_META } from '@/utils/formats';
 import { sanitizeFileName } from '@/utils/format';
@@ -167,7 +169,9 @@ export async function downloadFile(
  * media library. Returns false when the type isn't a supported media type.
  */
 export async function saveToMediaLibrary(path: string): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   try {
+    const MediaLibrary = await import('expo-media-library');
     const perm = await MediaLibrary.requestPermissionsAsync();
     if (!perm.granted) return false;
     await MediaLibrary.saveToLibraryAsync(path);
