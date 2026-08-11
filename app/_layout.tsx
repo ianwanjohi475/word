@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform } from 'react-native';
 import { ToastProvider } from '@/components/Toast';
 import { PdfRasterizerHost } from '@/components/PdfRasterizerHost';
 import { initDatabase } from '@/db/database';
@@ -62,8 +62,8 @@ export default function RootLayout() {
             <Stack.Screen name="result" options={{ gestureEnabled: false, animation: 'fade' }} />
             <Stack.Screen name="editor" options={{ presentation: 'card' }} />
           </Stack>
-          {/* Off-screen PDF renderer, always mounted so conversions can rasterize PDFs. */}
-          <PdfRasterizerHost />
+          {/* Off-screen PDF renderer (native only — WebView has no web build). */}
+          {Platform.OS !== 'web' && <PdfRasterizerHost />}
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
