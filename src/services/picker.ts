@@ -11,7 +11,11 @@ import { importSource } from './io';
 
 function detectSourceFormat(mime?: string, name?: string, uri?: string): SourceFormat {
   const hay = `${mime ?? ''} ${name ?? ''} ${uri ?? ''}`.toLowerCase();
-  return hay.includes('pdf') ? 'pdf' : 'image';
+  if (hay.includes('wordprocessingml') || hay.includes('.docx') || hay.includes('msword') || hay.includes('.doc')) {
+    return 'word';
+  }
+  if (hay.includes('pdf')) return 'pdf';
+  return 'image';
 }
 
 export class PickerCancelled extends Error {
@@ -62,7 +66,12 @@ export async function pickFromGallery(): Promise<SourceAsset[]> {
 /** Pick documents (PDF or image files) from the system file browser. */
 export async function pickDocuments(): Promise<SourceAsset[]> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: ['application/pdf', 'image/*'],
+    type: [
+      'application/pdf',
+      'image/*',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+    ],
     multiple: true,
     copyToCacheDirectory: true,
   });

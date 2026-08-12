@@ -14,9 +14,14 @@ Built with **React Native + Expo (managed workflow)**, **Expo Router**, **TypeSc
 
 - 📸 **Input**: pick from Files, pick from Gallery, or scan with the camera. Images and
   multi-page PDFs are supported.
-- 🧠 **OCR + structure**: the page image is sent to Groq's OpenAI-compatible vision API
-  in **JSON mode**, which returns an ordered list of typed blocks — `heading`,
-  `paragraph`, `table` — so layout survives the conversion.
+- 🧠 **OCR + structure**: the page image is sent to Groq's OpenAI-compatible vision API,
+  which returns an ordered list of typed blocks — `heading`, `paragraph`, `table` — so
+  layout survives the conversion.
+- 🛟 **Always works**: if Groq is unavailable (no key, rate limit, error), the web build
+  automatically falls back to **local Tesseract.js OCR** — unlimited and on-device. Leave
+  `EXPO_PUBLIC_GROQ_API_KEY` blank to use only the free local OCR.
+- 🔁 **Word ⇆ PDF** (and more): Word (`.docx`) and text-based PDFs are read directly
+  (mammoth / pdf.js text layer, no OCR), so Word→PDF and PDF→Word are fast and accurate.
 - 📄 **Real file generation** (client-side, no server):
   - **Word** → `.docx` via [`docx`](https://www.npmjs.com/package/docx)
   - **Excel** → `.xlsx` via [SheetJS `xlsx`](https://www.npmjs.com/package/xlsx)

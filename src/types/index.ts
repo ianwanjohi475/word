@@ -6,7 +6,7 @@
 export type OutputFormat = 'word' | 'excel' | 'pdf' | 'txt';
 
 /** Formats a user can feed in. */
-export type SourceFormat = 'image' | 'pdf';
+export type SourceFormat = 'image' | 'pdf' | 'word';
 
 /** Status of a conversion record. */
 export type ConversionStatus = 'completed' | 'failed' | 'processing';

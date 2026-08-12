@@ -23,7 +23,7 @@ import {
 import { formatBytes } from '@/utils/format';
 import type { OutputFormat, SourceAsset } from '@/types';
 
-const SUPPORT = ['JPG', 'PNG', 'HEIC', 'WEBP', 'PDF'];
+const SUPPORT = ['JPG', 'PNG', 'HEIC', 'PDF', 'DOCX'];
 
 export default function Upload() {
   const theme = useTheme();

@@ -14,8 +14,9 @@ import type {
   PipelineProgress,
   SourceAsset,
 } from '@/types';
-import { extractDocumentFromImage } from './groq';
+import { recognizeImage } from './ocr';
 import { rasterizePdf } from './pdfRasterizer';
+import { extractWord, extractPdfText } from './docExtract';
 import { persistOutput } from './io';
 import { insertFile } from '@/db/database';
 import { uid } from '@/utils/id';
@@ -23,7 +24,13 @@ import { stripExtension } from '@/utils/format';
 
 type ProgressFn = (p: PipelineProgress) => void;
 
-/** Run OCR on a source asset (image or multi-page PDF) into one DocumentModel. */
+/**
+ * Extract a DocumentModel from any source asset:
+ *  - Word (.docx): parse the text layer directly (no OCR) → enables Word → PDF.
+ *  - PDF: use the embedded text layer when present (fast, exact → PDF → Word);
+ *    fall back to rasterize + OCR for scanned PDFs.
+ *  - Image: OCR (Groq, with local Tesseract fallback).
+ */
 export async function runOcr(
   asset: SourceAsset,
   onProgress?: ProgressFn,
@@ -31,6 +38,25 @@ export async function runOcr(
 ): Promise<DocumentModel> {
   onProgress?.({ stage: 'uploading', progress: 0.12, message: 'Preparing your document' });
 
+  // --- Word document: direct text extraction, no OCR needed. ---
+  if (asset.sourceFormat === 'word') {
+    onProgress?.({ stage: 'detecting', progress: 0.4, message: 'Reading document' });
+    const doc = await extractWord(asset.uri);
+    onProgress?.({ stage: 'layout', progress: 0.66, message: 'Understanding layout' });
+    return doc;
+  }
+
+  // --- PDF with a real text layer: extract directly. ---
+  if (asset.sourceFormat === 'pdf') {
+    onProgress?.({ stage: 'detecting', progress: 0.3, message: 'Reading PDF text' });
+    const textDoc = await extractPdfText(asset.uri).catch(() => null);
+    if (textDoc && textDoc.blocks.length > 0) {
+      onProgress?.({ stage: 'layout', progress: 0.66, message: 'Understanding layout' });
+      return textDoc;
+    }
+  }
+
+  // --- Otherwise OCR the image(s). PDFs without text are rasterized first. ---
   let pageUris: string[];
   if (asset.sourceFormat === 'pdf') {
     onProgress?.({ stage: 'uploading', progress: 0.2, message: 'Rendering PDF pages' });
@@ -46,7 +72,7 @@ export async function runOcr(
   for (let i = 0; i < total; i++) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     // eslint-disable-next-line no-await-in-loop
-    const page = await extractDocumentFromImage(pageUris[i], { signal });
+    const page = await recognizeImage(pageUris[i], { signal });
     if (i === 0 && page.title) merged.title = page.title;
     if (!merged.language && page.language) merged.language = page.language;
     merged.blocks.push(...page.blocks);

@@ -70,5 +70,7 @@ export function formatFromExtension(ext: string): OutputFormat {
 }
 
 export function sourceFormatLabel(f: SourceFormat): string {
-  return f === 'pdf' ? 'PDF' : 'Image';
+  if (f === 'pdf') return 'PDF';
+  if (f === 'word') return 'Word';
+  return 'Image';
 }

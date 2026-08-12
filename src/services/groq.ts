@@ -165,7 +165,9 @@ async function callGroq(model: string, dataUrl: string, opts: CallOptions): Prom
     // Kept modest so input + output stays under low free-tier per-minute token
     // budgets. Enough for a full page of structured JSON.
     max_tokens: 3500,
-    response_format: { type: 'json_object' as const },
+    // NOTE: we intentionally do NOT use Groq's strict `response_format:
+    // json_object` mode — several models reject it with "Failed to validate
+    // JSON". We prompt hard for raw JSON and parse defensively instead.
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       {
