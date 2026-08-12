@@ -235,9 +235,52 @@ async function callGroq(model: string, dataUrl: string, opts: CallOptions): Prom
   return content;
 }
 
+/** Rank a model id by how likely it is to accept image input (−1 = unlikely). */
+function visionRank(id: string): number {
+  const l = id.toLowerCase();
+  if (l.includes('scout')) return 0;
+  if (l.includes('maverick')) return 1;
+  if (l.includes('vision') || l.includes('llava') || l.includes('pixtral')) return 2;
+  if (l.includes('llama-4') || l.includes('qwen') || l.includes('gemma') || /\bvl\b|-vl|4v/.test(l))
+    return 3;
+  return -1;
+}
+
+let cachedVisionModels: string[] | null = null;
+
+/**
+ * Ask Groq which models this key can actually use, and return the vision-capable
+ * ones (best first). This makes the app self-heal when a hardcoded model name
+ * has been retired or the key lacks access — no code change needed.
+ */
+async function discoverVisionModels(signal?: AbortSignal): Promise<string[]> {
+  if (cachedVisionModels) return cachedVisionModels;
+  try {
+    const res = await fetch(`${GROQ_BASE_URL}/models`, {
+      headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      signal,
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const ids: string[] = (json?.data ?? [])
+      .map((m: { id?: string }) => m?.id)
+      .filter((id: unknown): id is string => typeof id === 'string');
+    const ranked = ids
+      .map((id) => ({ id, rank: visionRank(id) }))
+      .filter((m) => m.rank >= 0)
+      .sort((a, b) => a.rank - b.rank)
+      .map((m) => m.id);
+    cachedVisionModels = ranked;
+    return ranked;
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Run OCR on a single image file (file:// uri) and return a DocumentModel.
- * Tries the configured model, then fallbacks if the model is decommissioned.
+ * Attempt order: the configured model, then any vision models the key actually
+ * has (auto-discovered), then the static fallbacks.
  */
 export async function extractDocumentFromImage(
   imageUri: string,
@@ -254,8 +297,9 @@ export async function extractDocumentFromImage(
   const base64 = await readAsBase64(imageUri);
   const dataUrl = `data:${guessImageMime(imageUri)};base64,${base64}`;
 
-  // De-duplicated model attempt order: configured model first, then fallbacks.
-  const models = Array.from(new Set([GROQ_MODEL, ...GROQ_MODEL_FALLBACKS]));
+  const discovered = await discoverVisionModels(opts.signal);
+  // De-duplicated attempt order: configured model, discovered vision models, fallbacks.
+  const models = Array.from(new Set([GROQ_MODEL, ...discovered, ...GROQ_MODEL_FALLBACKS]));
 
   let lastError: OcrError | null = null;
   for (const model of models) {
@@ -283,6 +327,12 @@ export async function extractDocumentFromImage(
       if (err.kind === 'model') continue;
       throw err;
     }
+  }
+  if (lastError?.kind === 'model') {
+    throw new OcrError(
+      'model',
+      'No vision model is available for your Groq key. Open https://console.groq.com/docs/models, copy a current multimodal model id, and set EXPO_PUBLIC_GROQ_MODEL in your .env.'
+    );
   }
   throw lastError ?? new OcrError('unknown', 'OCR failed.');
 }
