@@ -1,6 +1,7 @@
 /** Rounded surface card, optionally pressable with a spring micro-interaction. */
 import React, { useRef } from 'react';
 import { Animated, Pressable, StyleProp, View, ViewStyle } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/theme';
 
@@ -51,10 +52,10 @@ export function Card({
     <Pressable
       disabled={disabled}
       onPressIn={() =>
-        Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 40, bounciness: 0 }).start()
+        Animated.spring(scale, { toValue: 0.98, useNativeDriver: USE_NATIVE_DRIVER, speed: 40, bounciness: 0 }).start()
       }
       onPressOut={() =>
-        Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 0 }).start()
+        Animated.spring(scale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, speed: 40, bounciness: 0 }).start()
       }
       onPress={() => {
         if (haptic) Haptics.selectionAsync().catch(() => {});

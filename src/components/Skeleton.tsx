@@ -1,6 +1,7 @@
 /** Shimmering skeleton placeholder for loading states. */
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleProp, ViewStyle, View } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import { useTheme } from '@/theme';
 
 interface Props {
@@ -17,8 +18,8 @@ export function Skeleton({ width = '100%', height = 16, radius = 8, style }: Pro
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(opacity, { toValue: 0.5, duration: 700, useNativeDriver: USE_NATIVE_DRIVER }),
       ])
     );
     loop.start();

@@ -1,6 +1,7 @@
 /** Lightweight toast system exposed via a context hook: `useToast().show(...)`. */
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
@@ -30,7 +31,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hide = useCallback(() => {
-    Animated.timing(translateY, { toValue: -120, duration: 200, useNativeDriver: true }).start(() =>
+    Animated.timing(translateY, { toValue: -120, duration: 200, useNativeDriver: USE_NATIVE_DRIVER }).start(() =>
       setToast(null)
     );
   }, [translateY]);
@@ -40,7 +41,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       if (timer.current) clearTimeout(timer.current);
       setToast({ message, kind });
       translateY.setValue(-120);
-      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, speed: 16, bounciness: 6 }).start();
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: USE_NATIVE_DRIVER, speed: 16, bounciness: 6 }).start();
       timer.current = setTimeout(hide, 2600);
     },
     [hide, translateY]

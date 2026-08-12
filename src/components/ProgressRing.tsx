@@ -1,11 +1,13 @@
-/** Circular progress ring with an animated arc and a centered percentage. */
-import React, { useEffect, useRef } from 'react';
+/** Circular progress ring with an animated arc and a centered percentage.
+ *
+ * The arc is driven by React state (not an animated SVG prop) so it behaves
+ * identically on web and native and avoids react-native-svg forwarding
+ * non-DOM props like `collapsable` to the browser. */
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '@/theme';
 import { Text } from './Text';
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface Props {
   /** 0..1 */
@@ -20,22 +22,17 @@ export function ProgressRing({ progress, size = 168, stroke = 12, label }: Props
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const anim = useRef(new Animated.Value(0)).current;
-  const [display, setDisplay] = React.useState(0);
+  const [value, setValue] = useState(0); // 0..1, smoothed
 
   useEffect(() => {
-    Animated.timing(anim, {
-      toValue: Math.max(0, Math.min(1, progress)),
-      duration: 500,
-      useNativeDriver: false,
-    }).start();
-    const id = anim.addListener(({ value }) => setDisplay(Math.round(value * 100)));
+    const target = Math.max(0, Math.min(1, progress));
+    Animated.timing(anim, { toValue: target, duration: 500, useNativeDriver: false }).start();
+    const id = anim.addListener(({ value: v }) => setValue(v));
     return () => anim.removeListener(id);
   }, [progress, anim]);
 
-  const strokeDashoffset = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [circumference, 0],
-  });
+  const offset = circumference * (1 - value);
+  const pct = Math.round(value * 100);
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -48,7 +45,7 @@ export function ProgressRing({ progress, size = 168, stroke = 12, label }: Props
           strokeWidth={stroke}
           fill="none"
         />
-        <AnimatedCircle
+        <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -57,10 +54,10 @@ export function ProgressRing({ progress, size = 168, stroke = 12, label }: Props
           fill="none"
           strokeLinecap="round"
           strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
+          strokeDashoffset={offset}
         />
       </Svg>
-      <Text variant="display">{display}%</Text>
+      <Text variant="display">{pct}%</Text>
       {!!label && (
         <Text variant="caption" color="muted" style={{ marginTop: 2 }}>
           {label}

@@ -1,6 +1,7 @@
 /** Modal dialogs: a base sheet, a confirm dialog, and a text-prompt dialog. */
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { Text } from './Text';
@@ -20,8 +21,8 @@ export function DialogBase({ visible, onClose, children }: BaseProps) {
   useEffect(() => {
     if (visible) {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
-        Animated.spring(translate, { toValue: 0, useNativeDriver: true, speed: 18, bounciness: 4 }),
+        Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(translate, { toValue: 0, useNativeDriver: USE_NATIVE_DRIVER, speed: 18, bounciness: 4 }),
       ]).start();
     } else {
       opacity.setValue(0);

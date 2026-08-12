@@ -1,6 +1,7 @@
 /** Primary/secondary/ghost/danger button with press + haptic micro-interaction. */
 import React, { useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
@@ -59,7 +60,7 @@ export function Button({
   };
 
   const animateTo = (v: number) =>
-    Animated.spring(scale, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+    Animated.spring(scale, { toValue: v, useNativeDriver: USE_NATIVE_DRIVER, speed: 40, bounciness: 0 }).start();
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, fullWidth && styles.full, style]}>

@@ -6,6 +6,7 @@
  * The app is intentionally locked to a single, polished light theme so the brand
  * reads consistently on every device (no washed-out dark rendering).
  */
+import { Platform } from 'react-native';
 import { palette, spacing, radius, typography, motion, formatColors } from './tokens';
 
 export type ThemeColors = {
@@ -74,6 +75,16 @@ export type Shadow = {
 
 function buildShadows() {
   const color = '#0B2A22';
+  // On web, React Native Web deprecates the shadow* props in favor of the CSS
+  // `boxShadow` string — use that so the browser console stays clean.
+  if (Platform.OS === 'web') {
+    return {
+      none: {} as Shadow,
+      sm: { boxShadow: '0 2px 6px rgba(11,42,34,0.06)' } as unknown as Shadow,
+      md: { boxShadow: '0 8px 20px rgba(11,42,34,0.10)' } as unknown as Shadow,
+      lg: { boxShadow: '0 16px 34px rgba(11,42,34,0.16)' } as unknown as Shadow,
+    };
+  }
   return {
     none: {
       shadowColor: 'transparent',

@@ -1,6 +1,7 @@
 /** OCR Processing: animated scan preview, progress ring, staged steps, error/retry. */
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Animated, Easing, StyleSheet } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,8 +79,8 @@ export default function Processing() {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(scanY, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(scanY, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(scanY, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.ease), useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(scanY, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.ease), useNativeDriver: USE_NATIVE_DRIVER }),
       ])
     );
     loop.start();
@@ -205,7 +206,6 @@ export default function Processing() {
               styles.scanLine,
               {
                 backgroundColor: theme.colors.accent,
-                shadowColor: theme.colors.accent,
                 transform: [
                   {
                     translateY: scanY.interpolate({ inputRange: [0, 1], outputRange: [6, 214] }),
@@ -295,10 +295,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 3,
     borderRadius: 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    elevation: 4,
   },
   scanBadge: {
     position: 'absolute',

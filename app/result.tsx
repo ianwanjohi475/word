@@ -1,6 +1,7 @@
 /** Conversion Result: success, original→converted, and download/share/edit actions. */
 import React, { useEffect, useRef, useState } from 'react';
 import { View, ScrollView, Animated, StyleSheet, ActivityIndicator } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import { Image } from 'expo-image';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,8 +51,8 @@ export default function Result() {
   useEffect(() => {
     if (record) {
       Animated.parallel([
-        Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 8 }),
-        Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, useNativeDriver: USE_NATIVE_DRIVER, speed: 12, bounciness: 8 }),
+        Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start();
     }
   }, [record, scale, opacity]);
