@@ -97,7 +97,7 @@ export default function Scan() {
       </View>
 
       {/* Frame guide */}
-      <View style={styles.frameWrap} pointerEvents="none">
+      <View style={[styles.frameWrap, { pointerEvents: 'none' }]}>
         <View style={styles.frame}>
           {(['tl', 'tr', 'bl', 'br'] as const).map((c) => (
             <View key={c} style={[styles.corner, styles[c]]} />

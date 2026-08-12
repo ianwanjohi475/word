@@ -63,10 +63,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       {toast && (
         <Animated.View
-          pointerEvents="none"
           style={[
             styles.wrap,
-            { top: insets.top + 8, transform: [{ translateY }] },
+            { top: insets.top + 8, transform: [{ translateY }], pointerEvents: 'none' },
           ]}
         >
           <View

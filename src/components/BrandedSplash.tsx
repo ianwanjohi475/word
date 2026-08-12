@@ -24,7 +24,7 @@ export function BrandedSplash({ onDone }: { onDone: () => void }) {
   }, [fade, logoScale, logoOpacity, onDone]);
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.wrap, { opacity: fade }]} pointerEvents="none">
+    <Animated.View style={[StyleSheet.absoluteFill, styles.wrap, { opacity: fade, pointerEvents: 'none' }]}>
       <Animated.View style={{ alignItems: 'center', opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
         <View style={styles.logo}>
           <Svg width={54} height={54} viewBox="0 0 100 100">
