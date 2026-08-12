@@ -1,24 +1,19 @@
 /**
  * Web PDF generator using pdf-lib (pure JS, no native deps).
  *
- * Native builds use expo-print for richer HTML layout; on web we lay out the
- * document model directly with pdf-lib and return raw PDF bytes so the browser
- * can download them. Handles headings, wrapped paragraphs and simple tables
- * with pagination.
+ * pdf-lib is imported dynamically inside the generator so a) it's only pulled in
+ * when a PDF is actually requested, and b) any issue with it can never take down
+ * app startup. Native builds use expo-print instead.
+ *
+ * Handles headings, wrapped paragraphs and simple tables with pagination.
  */
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import type { PDFFont, PDFPage } from 'pdf-lib';
 import type { DocumentModel, TableBlock } from '@/types';
 
 const PAGE_W = 595.28; // A4
 const PAGE_H = 841.89;
 const MARGIN = 48;
 const CONTENT_W = PAGE_W - MARGIN * 2;
-
-const INK = rgb(0.14, 0.17, 0.2);
-const ACCENT = rgb(0.055, 0.55, 0.42);
-const MUTED = rgb(0.42, 0.46, 0.5);
-const LINE = rgb(0.87, 0.89, 0.91);
-const HEADER_FILL = rgb(0.9, 0.95, 0.93);
 
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.replace(/\s+/g, ' ').trim().split(' ');
@@ -38,6 +33,14 @@ function wrap(text: string, font: PDFFont, size: number, maxWidth: number): stri
 }
 
 export async function generatePdfBytes(doc: DocumentModel): Promise<Uint8Array> {
+  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+
+  const INK = rgb(0.14, 0.17, 0.2);
+  const ACCENT = rgb(0.055, 0.55, 0.42);
+  const MUTED = rgb(0.42, 0.46, 0.5);
+  const LINE = rgb(0.87, 0.89, 0.91);
+  const HEADER_FILL = rgb(0.9, 0.95, 0.93);
+
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -60,6 +63,45 @@ export async function generatePdfBytes(doc: DocumentModel): Promise<Uint8Array> 
     }
   };
 
+  const drawTable = (table: TableBlock) => {
+    const rows = table.headers ? [table.headers, ...table.rows] : table.rows;
+    if (rows.length === 0) return;
+    const cols = rows[0].length || 1;
+    const colW = CONTENT_W / cols;
+    const size = 9.5;
+    const padding = 5;
+
+    rows.forEach((row, rowIndex) => {
+      const cellLines = row.map((c) => wrap(String(c ?? ''), font, size, colW - padding * 2));
+      const rowH = Math.max(...cellLines.map((l) => l.length)) * (size + 3) + padding * 2;
+      ensure(rowH);
+      const top = y;
+      const isHeader = table.headers && rowIndex === 0;
+
+      if (isHeader) {
+        page.drawRectangle({ x: MARGIN, y: top - rowH, width: CONTENT_W, height: rowH, color: HEADER_FILL });
+      }
+      row.forEach((_, c) => {
+        const x = MARGIN + c * colW;
+        cellLines[c].forEach((ln, li) => {
+          page.drawText(ln, {
+            x: x + padding,
+            y: top - padding - size - li * (size + 3),
+            size,
+            font: isHeader ? bold : font,
+            color: INK,
+          });
+        });
+        if (c > 0) {
+          page.drawLine({ start: { x, y: top }, end: { x, y: top - rowH }, thickness: 0.5, color: LINE });
+        }
+      });
+      page.drawLine({ start: { x: MARGIN, y: top }, end: { x: MARGIN + CONTENT_W, y: top }, thickness: 0.5, color: LINE });
+      page.drawLine({ start: { x: MARGIN, y: top - rowH }, end: { x: MARGIN + CONTENT_W, y: top - rowH }, thickness: 0.5, color: LINE });
+      y = top - rowH;
+    });
+  };
+
   if (doc.title) {
     drawText(doc.title, 22, bold, INK, 8);
     y -= 6;
@@ -74,63 +116,13 @@ export async function generatePdfBytes(doc: DocumentModel): Promise<Uint8Array> 
       drawText(block.text, 11, font, INK, 5);
       y -= 4;
     } else {
-      drawTable(block, page, () => page);
+      drawTable(block);
       y -= 6;
     }
   }
 
-  // Footer note on the last page.
   ensure(20);
-  page.drawText('Generated with Converta', {
-    x: MARGIN,
-    y: MARGIN - 18,
-    size: 8,
-    font,
-    color: MUTED,
-  });
-
-  function drawTable(table: TableBlock, _p: PDFPage, _cur: () => PDFPage) {
-    const rows = table.headers ? [table.headers, ...table.rows] : table.rows;
-    if (rows.length === 0) return;
-    const cols = rows[0].length || 1;
-    const colW = CONTENT_W / cols;
-    const size = 9.5;
-    const padding = 5;
-
-    rows.forEach((row, rowIndex) => {
-      // Compute row height from wrapped cell content.
-      const cellLines = row.map((c) => wrap(String(c ?? ''), font, size, colW - padding * 2));
-      const rowH = Math.max(...cellLines.map((l) => l.length)) * (size + 3) + padding * 2;
-      ensure(rowH);
-      const top = y;
-      const isHeader = table.headers && rowIndex === 0;
-
-      if (isHeader) {
-        page.drawRectangle({ x: MARGIN, y: top - rowH, width: CONTENT_W, height: rowH, color: HEADER_FILL });
-      }
-      // Cell text + vertical separators
-      row.forEach((_, c) => {
-        const x = MARGIN + c * colW;
-        const lines = cellLines[c];
-        lines.forEach((ln, li) => {
-          page.drawText(ln, {
-            x: x + padding,
-            y: top - padding - size - li * (size + 3),
-            size,
-            font: isHeader ? bold : font,
-            color: INK,
-          });
-        });
-        if (c > 0) {
-          page.drawLine({ start: { x, y: top }, end: { x, y: top - rowH }, thickness: 0.5, color: LINE });
-        }
-      });
-      // Row borders
-      page.drawLine({ start: { x: MARGIN, y: top }, end: { x: MARGIN + CONTENT_W, y: top }, thickness: 0.5, color: LINE });
-      page.drawLine({ start: { x: MARGIN, y: top - rowH }, end: { x: MARGIN + CONTENT_W, y: top - rowH }, thickness: 0.5, color: LINE });
-      y = top - rowH;
-    });
-  }
+  page.drawText('Generated with Converta', { x: MARGIN, y: MARGIN - 18, size: 8, font, color: MUTED });
 
   return pdf.save();
 }
