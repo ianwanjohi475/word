@@ -37,7 +37,6 @@ export async function generatePdfBytes(doc: DocumentModel): Promise<Uint8Array> 
 
   const INK = rgb(0.14, 0.17, 0.2);
   const ACCENT = rgb(0.055, 0.55, 0.42);
-  const MUTED = rgb(0.42, 0.46, 0.5);
   const LINE = rgb(0.87, 0.89, 0.91);
   const HEADER_FILL = rgb(0.9, 0.95, 0.93);
 
@@ -120,9 +119,6 @@ export async function generatePdfBytes(doc: DocumentModel): Promise<Uint8Array> 
       y -= 6;
     }
   }
-
-  ensure(20);
-  page.drawText('Generated with Converta', { x: MARGIN, y: MARGIN - 18, size: 8, font, color: MUTED });
 
   return pdf.save();
 }

@@ -47,7 +47,7 @@ export default function Home() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      <StatusBar style="dark" />
+      <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + theme.spacing.md, paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
@@ -63,11 +63,8 @@ export default function Home() {
               Let's convert
             </Text>
           </View>
-          <Pressable onPress={() => router.push('/(tabs)/history')} style={[styles.iconBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <Ionicons name="notifications-outline" size={20} color={theme.colors.text} />
-          </Pressable>
-          <Pressable onPress={() => router.push('/(tabs)/settings')} style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
-            <Ionicons name="person" size={20} color="#fff" />
+          <Pressable onPress={() => router.push('/(tabs)/settings')} style={[styles.iconBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Ionicons name="settings-outline" size={20} color={theme.colors.text} />
           </Pressable>
         </View>
 

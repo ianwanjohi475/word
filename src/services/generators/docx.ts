@@ -1,6 +1,5 @@
 /** Word (.docx) generator built on the `docx` library. Returns base64. */
 import {
-  AlignmentType,
   BorderStyle,
   Document,
   HeadingLevel,
@@ -127,16 +126,7 @@ export async function generateDocx(doc: DocumentModel): Promise<string> {
     sections: [
       {
         properties: { page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } } },
-        children: [
-          ...children,
-          new Paragraph({
-            spacing: { before: 400 },
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({ text: 'Generated with Converta', size: 16, color: '9BA3B2', italics: true }),
-            ],
-          }),
-        ],
+        children,
       },
     ],
   });

@@ -73,7 +73,6 @@ function buildHtml(doc: DocumentModel): string {
 <body>
   ${title}
   ${body}
-  <div class="footer">Generated with Converta</div>
 </body>
 </html>`;
 }

@@ -1,12 +1,12 @@
 /**
- * Theme resolver — turns the raw tokens into a theme object exposed via
- * `useTheme()`. Semantic color names (bg, surface, text…) let screens stay
- * color-agnostic.
+ * Theme resolver — light + dark palettes exposed via `useTheme()`.
  *
- * The app is intentionally locked to a single, polished light theme so the brand
- * reads consistently on every device (no washed-out dark rendering).
+ * The active mode comes from Settings (system / light / dark). `useTheme()`
+ * reads the settings store and the OS scheme, so toggling the mode re-renders
+ * every screen instantly.
  */
-import { Platform } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { palette, spacing, radius, typography, motion, formatColors } from './tokens';
 
 export type ThemeColors = {
@@ -65,6 +65,34 @@ const lightColors: ThemeColors = {
   overlay: 'rgba(11, 16, 21, 0.42)',
 };
 
+const darkColors: ThemeColors = {
+  bg: '#0B1015',
+  bgElevated: '#141A20',
+  surface: '#141A20',
+  surfaceAlt: '#1E262E',
+  surfaceSunken: '#0E141A',
+  border: '#232C34',
+  borderStrong: '#313C46',
+  text: '#F2F5F7',
+  textMuted: '#9AA6B2',
+  textFaint: '#6B7681',
+  textInverse: '#0B1015',
+  accent: '#1BA67F',
+  accentPressed: '#159470',
+  accentDeep: '#0C5C49',
+  accentSoft: '#12352C',
+  onAccent: '#FFFFFF',
+  success: '#2FBE82',
+  successSoft: '#12271F',
+  warning: '#F0B25A',
+  warningSoft: '#2A2113',
+  danger: '#F0666B',
+  dangerSoft: '#2A1618',
+  info: '#5C97F7',
+  skeleton: '#222C34',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+};
+
 export type Shadow = {
   shadowColor: string;
   shadowOffset: { width: number; height: number };
@@ -73,47 +101,25 @@ export type Shadow = {
   elevation: number;
 };
 
-function buildShadows() {
-  const color = '#0B2A22';
-  // On web, React Native Web deprecates the shadow* props in favor of the CSS
-  // `boxShadow` string — use that so the browser console stays clean.
+function buildShadows(isDark: boolean) {
+  const color = isDark ? '#000000' : '#0B2A22';
+  // On web, RNW deprecates the shadow* props — use CSS boxShadow so the browser
+  // console stays clean.
   if (Platform.OS === 'web') {
+    const a = isDark ? 0.5 : 1;
     return {
       none: {} as Shadow,
-      sm: { boxShadow: '0 2px 6px rgba(11,42,34,0.06)' } as unknown as Shadow,
-      md: { boxShadow: '0 8px 20px rgba(11,42,34,0.10)' } as unknown as Shadow,
-      lg: { boxShadow: '0 16px 34px rgba(11,42,34,0.16)' } as unknown as Shadow,
+      sm: { boxShadow: `0 2px 6px rgba(3,10,8,${0.06 * a})` } as unknown as Shadow,
+      md: { boxShadow: `0 8px 20px rgba(3,10,8,${0.1 * a})` } as unknown as Shadow,
+      lg: { boxShadow: `0 16px 34px rgba(3,10,8,${0.16 * a})` } as unknown as Shadow,
     };
   }
+  const opa = (base: number) => (isDark ? Math.min(1, base * 4) : base);
   return {
-    none: {
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-      elevation: 0,
-    } as Shadow,
-    sm: {
-      shadowColor: color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 6,
-      elevation: 2,
-    } as Shadow,
-    md: {
-      shadowColor: color,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.1,
-      shadowRadius: 20,
-      elevation: 5,
-    } as Shadow,
-    lg: {
-      shadowColor: color,
-      shadowOffset: { width: 0, height: 16 },
-      shadowOpacity: 0.16,
-      shadowRadius: 34,
-      elevation: 12,
-    } as Shadow,
+    none: { shadowColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0, shadowRadius: 0, elevation: 0 } as Shadow,
+    sm: { shadowColor: color, shadowOffset: { width: 0, height: 2 }, shadowOpacity: opa(0.06), shadowRadius: 6, elevation: 2 } as Shadow,
+    md: { shadowColor: color, shadowOffset: { width: 0, height: 8 }, shadowOpacity: opa(0.1), shadowRadius: 20, elevation: 5 } as Shadow,
+    lg: { shadowColor: color, shadowOffset: { width: 0, height: 16 }, shadowOpacity: opa(0.16), shadowRadius: 34, elevation: 12 } as Shadow,
   };
 }
 
@@ -128,9 +134,10 @@ export type Theme = {
   shadows: ReturnType<typeof buildShadows>;
 };
 
-const shadows = buildShadows();
+const lightShadows = buildShadows(false);
+const darkShadows = buildShadows(true);
 
-const THEME: Theme = {
+const lightTheme: Theme = {
   isDark: false,
   colors: lightColors,
   spacing,
@@ -138,11 +145,25 @@ const THEME: Theme = {
   typography,
   motion,
   formatColors,
-  shadows,
+  shadows: lightShadows,
+};
+
+const darkTheme: Theme = {
+  isDark: true,
+  colors: darkColors,
+  spacing,
+  radius,
+  typography,
+  motion,
+  formatColors,
+  shadows: darkShadows,
 };
 
 export function useTheme(): Theme {
-  return THEME;
+  const mode = useSettingsStore((s) => s.themeMode);
+  const scheme = useColorScheme();
+  const isDark = mode === 'dark' || (mode === 'system' && scheme === 'dark');
+  return isDark ? darkTheme : lightTheme;
 }
 
 export { palette, spacing, radius, typography, motion, formatColors };

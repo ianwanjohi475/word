@@ -74,7 +74,7 @@ export default function Onboarding() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg, paddingTop: insets.top }}>
-      <StatusBar style="dark" />
+      <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
           <View style={[styles.brandDot, { backgroundColor: theme.colors.accent }]} />

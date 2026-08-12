@@ -1,0 +1,16 @@
+{
+  "name": "Converta — Document Converter",
+  "short_name": "Converta",
+  "description": "Turn any document into editable Word, Excel, PDF or text files with AI OCR.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A5C49",
+  "theme_color": "#0E8C6B",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

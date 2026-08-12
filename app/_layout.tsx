@@ -9,18 +9,23 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Platform } from 'react-native';
 import { ToastProvider } from '@/components/Toast';
 import { PdfRasterizerHost } from '@/components/PdfRasterizerHost';
+import { BrandedSplash } from '@/components/BrandedSplash';
 import { initDatabase } from '@/db/database';
 import { ensureDirs } from '@/services/files';
+import { setupPwa } from '@/services/pwa';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { palette } from '@/theme';
+import { useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
+  const theme = useTheme();
   const hydrated = useSettingsStore((s) => s.hydrated);
   const [ready, setReady] = useState(false);
+  const [showBrand, setShowBrand] = useState(true);
 
   useEffect(() => {
+    setupPwa();
     (async () => {
       try {
         await Promise.all([initDatabase(), ensureDirs()]);
@@ -45,7 +50,7 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: { backgroundColor: palette.neutral50 },
+              contentStyle: { backgroundColor: theme.colors.bg },
               animation: 'slide_from_right',
             }}
           >
@@ -61,6 +66,8 @@ export default function RootLayout() {
           </Stack>
           {/* Off-screen PDF renderer (native only — WebView has no web build). */}
           {Platform.OS !== 'web' && <PdfRasterizerHost />}
+          {/* Branded launch overlay with the "powered by ian_ke" credit. */}
+          {showBrand && <BrandedSplash onDone={() => setShowBrand(false)} />}
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

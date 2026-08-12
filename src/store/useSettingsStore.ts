@@ -4,18 +4,20 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { OutputFormat } from '@/types';
 
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 export interface SettingsState {
   hydrated: boolean;
   onboardingComplete: boolean;
   defaultFormat: OutputFormat;
   /** OCR language hint shown in Settings (the model auto-detects regardless). */
   ocrLanguage: string;
-  notificationsEnabled: boolean;
+  themeMode: ThemeMode;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
   setDefaultFormat: (f: OutputFormat) => void;
   setOcrLanguage: (l: string) => void;
-  setNotificationsEnabled: (v: boolean) => void;
+  setThemeMode: (m: ThemeMode) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -25,12 +27,12 @@ export const useSettingsStore = create<SettingsState>()(
       onboardingComplete: false,
       defaultFormat: 'word',
       ocrLanguage: 'Auto-detect',
-      notificationsEnabled: true,
+      themeMode: 'system',
       completeOnboarding: () => set({ onboardingComplete: true }),
       resetOnboarding: () => set({ onboardingComplete: false }),
       setDefaultFormat: (f) => set({ defaultFormat: f }),
       setOcrLanguage: (l) => set({ ocrLanguage: l }),
-      setNotificationsEnabled: (v) => set({ notificationsEnabled: v }),
+      setThemeMode: (m) => set({ themeMode: m }),
     }),
     {
       name: 'converta-settings',
@@ -39,7 +41,7 @@ export const useSettingsStore = create<SettingsState>()(
         onboardingComplete: s.onboardingComplete,
         defaultFormat: s.defaultFormat,
         ocrLanguage: s.ocrLanguage,
-        notificationsEnabled: s.notificationsEnabled,
+        themeMode: s.themeMode,
       }),
       onRehydrateStorage: () => (state) => {
         // Mark hydration complete so the root layout can gate navigation.

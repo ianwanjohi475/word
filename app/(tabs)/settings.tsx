@@ -1,6 +1,6 @@
-/** Settings: account placeholder, defaults, language, storage, privacy, about. */
+/** Settings: account, appearance (light/dark), defaults, storage, privacy, support, about. */
 import React, { useCallback, useState } from 'react';
-import { View, ScrollView, Pressable, Switch, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, StyleSheet, Linking } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
@@ -12,14 +12,22 @@ import { Button } from '@/components/Button';
 import { FormatIcon } from '@/components/FormatIcon';
 import { DialogBase, ConfirmDialog } from '@/components/Dialog';
 import { useToast } from '@/components/Toast';
-import { useSettingsStore } from '@/store/useSettingsStore';
+import { useSettingsStore, type ThemeMode } from '@/store/useSettingsStore';
 import { storageUsage, clearCache } from '@/services/io';
 import { hasApiKey, GROQ_MODEL } from '@/config';
 import { OUTPUT_FORMATS, FORMAT_META } from '@/utils/formats';
 import { formatBytes } from '@/utils/format';
 import type { OutputFormat } from '@/types';
 
+const SUPPORT_PHONE = '0758950370';
+const SUPPORT_EMAIL = 'ianwanjohi475@gmail.com';
 const LANGUAGES = ['Auto-detect', 'English', 'Spanish', 'French', 'German', 'Portuguese', 'Chinese', 'Arabic', 'Hindi'];
+
+const THEME_OPTIONS: { key: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'system', label: 'System', icon: 'phone-portrait-outline' },
+  { key: 'light', label: 'Light', icon: 'sunny-outline' },
+  { key: 'dark', label: 'Dark', icon: 'moon-outline' },
+];
 
 function Row({
   icon,
@@ -51,7 +59,7 @@ function Row({
         },
       ]}
     >
-      <View style={[styles.rowIcon, { backgroundColor: (iconColor ?? theme.colors.accent) + '18' }]}>
+      <View style={[styles.rowIcon, { backgroundColor: (iconColor ?? theme.colors.accent) + '22' }]}>
         <Ionicons name={icon} size={18} color={iconColor ?? theme.colors.accent} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
@@ -85,8 +93,8 @@ export default function Settings() {
   const setDefaultFormat = useSettingsStore((s) => s.setDefaultFormat);
   const ocrLanguage = useSettingsStore((s) => s.ocrLanguage);
   const setOcrLanguage = useSettingsStore((s) => s.setOcrLanguage);
-  const notifications = useSettingsStore((s) => s.notificationsEnabled);
-  const setNotifications = useSettingsStore((s) => s.setNotificationsEnabled);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const resetOnboarding = useSettingsStore((s) => s.resetOnboarding);
 
   const [usage, setUsage] = useState<number | null>(null);
@@ -94,6 +102,7 @@ export default function Settings() {
   const [showLang, setShowLang] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
   const [confirmClearCache, setConfirmClearCache] = useState(false);
 
   useFocusEffect(
@@ -103,6 +112,14 @@ export default function Settings() {
   );
 
   const version = Constants.expoConfig?.version ?? '1.0.0';
+
+  const openLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      toast.show('Could not open that on this device.', 'error');
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
@@ -139,6 +156,31 @@ export default function Settings() {
           />
         </Card>
 
+        {/* Appearance */}
+        <SectionLabel>Appearance</SectionLabel>
+        <Card padded>
+          <Text variant="bodyStrong" style={{ marginBottom: 10 }}>
+            Theme
+          </Text>
+          <View style={[styles.segment, { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border }]}>
+            {THEME_OPTIONS.map((opt) => {
+              const active = themeMode === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => setThemeMode(opt.key)}
+                  style={[styles.segmentItem, active && { backgroundColor: theme.colors.surface }, active && theme.shadows.sm]}
+                >
+                  <Ionicons name={opt.icon} size={16} color={active ? theme.colors.accent : theme.colors.textMuted} />
+                  <Text variant="captionStrong" color={active ? 'accent' : 'muted'} style={{ marginTop: 4 }}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
         {/* Conversion */}
         <SectionLabel>Conversion</SectionLabel>
         <Card padded={false} style={{ overflow: 'hidden' }}>
@@ -148,40 +190,14 @@ export default function Settings() {
             subtitle={FORMAT_META[defaultFormat].label}
             onPress={() => setShowFormat(true)}
           />
-          <Row
-            icon="language-outline"
-            title="OCR language"
-            subtitle={ocrLanguage}
-            onPress={() => setShowLang(true)}
-            last
-          />
-        </Card>
-
-        {/* Preferences */}
-        <SectionLabel>Preferences</SectionLabel>
-        <Card padded={false} style={{ overflow: 'hidden' }}>
-          <Row
-            icon="notifications-outline"
-            iconColor={theme.colors.warning}
-            title="Notifications"
-            subtitle="Alerts when conversions finish"
-            right={
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                trackColor={{ true: theme.colors.accent, false: theme.colors.borderStrong }}
-                thumbColor="#fff"
-              />
-            }
-            last
-          />
+          <Row icon="language-outline" title="OCR language" subtitle={ocrLanguage} onPress={() => setShowLang(true)} last />
         </Card>
 
         {/* Storage */}
         <SectionLabel>Storage</SectionLabel>
         <Card padded>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={[styles.rowIcon, { backgroundColor: theme.colors.info + '18' }]}>
+            <View style={[styles.rowIcon, { backgroundColor: theme.colors.info + '22' }]}>
               <Ionicons name="save-outline" size={18} color={theme.colors.info} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
@@ -202,9 +218,7 @@ export default function Settings() {
             icon="hardware-chip-outline"
             title="OCR engine"
             subtitle={`Groq · ${hasApiKey() ? 'API key configured' : 'No API key'}`}
-            right={
-              <View style={[styles.dot, { backgroundColor: hasApiKey() ? theme.colors.success : theme.colors.danger }]} />
-            }
+            right={<View style={[styles.dot, { backgroundColor: hasApiKey() ? theme.colors.success : theme.colors.danger }]} />}
           />
           <Row icon="shield-checkmark-outline" iconColor={theme.colors.success} title="Privacy" subtitle="How your data is handled" onPress={() => setShowPrivacy(true)} last />
         </Card>
@@ -212,19 +226,18 @@ export default function Settings() {
         {/* Support */}
         <SectionLabel>Support</SectionLabel>
         <Card padded={false} style={{ overflow: 'hidden' }}>
-          <Row
-            icon="help-circle-outline"
-            title="Help & Support"
-            onPress={() => toast.show('Support: help@converta.app', 'info')}
-          />
+          <Row icon="help-buoy-outline" title="Help & Support" subtitle="Call or email us" onPress={() => setShowSupport(true)} />
           <Row icon="information-circle-outline" title="About" subtitle={`Version ${version}`} onPress={() => setShowAbout(true)} last />
         </Card>
 
-        <Pressable onPress={resetOnboarding} style={{ alignSelf: 'center', marginTop: theme.spacing.xxl, padding: 8 }}>
+        <Pressable onPress={resetOnboarding} style={{ alignSelf: 'center', marginTop: theme.spacing.xxl, padding: 6 }}>
           <Text variant="caption" color="faint">
             Replay onboarding
           </Text>
         </Pressable>
+        <Text variant="captionStrong" color="muted" center style={{ marginTop: 8 }}>
+          Proudly powered by ian_ke
+        </Text>
       </ScrollView>
 
       {/* Default format picker */}
@@ -277,6 +290,32 @@ export default function Settings() {
         </ScrollView>
       </DialogBase>
 
+      {/* Support */}
+      <DialogBase visible={showSupport} onClose={() => setShowSupport(false)}>
+        <View style={[styles.aboutIcon, { backgroundColor: theme.colors.accentSoft }]}>
+          <Ionicons name="help-buoy" size={28} color={theme.colors.accent} />
+        </View>
+        <Text variant="h3" center>
+          Help & Support
+        </Text>
+        <Text variant="body" color="muted" center style={{ marginTop: 8, marginBottom: 18 }}>
+          We're here to help. Reach us any time:
+        </Text>
+        <Button label={`Call ${SUPPORT_PHONE}`} icon="call-outline" onPress={() => openLink(`tel:${SUPPORT_PHONE}`)} />
+        <View style={{ height: 10 }} />
+        <Button
+          label="Email support"
+          icon="mail-outline"
+          variant="secondary"
+          onPress={() => openLink(`mailto:${SUPPORT_EMAIL}?subject=Converta%20Support`)}
+        />
+        <Text variant="caption" color="muted" center style={{ marginTop: 12 }}>
+          {SUPPORT_EMAIL}
+        </Text>
+        <View style={{ height: 12 }} />
+        <Button label="Close" variant="ghost" onPress={() => setShowSupport(false)} />
+      </DialogBase>
+
       {/* Privacy */}
       <DialogBase visible={showPrivacy} onClose={() => setShowPrivacy(false)}>
         <View style={[styles.aboutIcon, { backgroundColor: theme.colors.successSoft }]}>
@@ -309,7 +348,10 @@ export default function Settings() {
         <Text variant="body" color="muted" center style={{ marginTop: 14 }}>
           Turn any document into editable Word, Excel, PDF or text files with AI-powered OCR.
         </Text>
-        <View style={{ height: 18 }} />
+        <Text variant="captionStrong" color="accent" center style={{ marginTop: 14 }}>
+          Proudly powered by ian_ke
+        </Text>
+        <View style={{ height: 16 }} />
         <Button label="Close" variant="secondary" onPress={() => setShowAbout(false)} />
       </DialogBase>
 
@@ -336,6 +378,8 @@ const styles = StyleSheet.create({
   rowIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 56, height: 56, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 10, height: 10, borderRadius: 5 },
+  segment: { flexDirection: 'row', borderRadius: 14, borderWidth: 1, padding: 4, gap: 4 },
+  segmentItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10 },
   pickRow: {
     flexDirection: 'row',
     alignItems: 'center',
