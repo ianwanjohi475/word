@@ -14,6 +14,9 @@ import { RecentFileCard } from '@/components/RecentFileCard';
 import { FileRow } from '@/components/FileRow';
 import { EmptyState } from '@/components/EmptyState';
 import { useConvertFlow } from '@/hooks/useConvertFlow';
+import { useConversionStore } from '@/store/useConversionStore';
+import { pickDocuments, PickerCancelled } from '@/services/picker';
+import { useToast } from '@/components/Toast';
 import { useFilesStore } from '@/store/useFilesStore';
 import { greetingForNow } from '@/utils/format';
 import type { OutputFormat, SourceFormat } from '@/types';
@@ -30,7 +33,25 @@ export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { run } = useConvertFlow();
+  const toast = useToast();
+  const setAssets = useConversionStore((s) => s.setAssets);
   const files = useFilesStore((s) => s.files);
+
+  const editPdf = async () => {
+    try {
+      const picked = await pickDocuments();
+      const pdf = picked.find((a) => a.sourceFormat === 'pdf');
+      if (!pdf) {
+        if (picked.length) toast.show('Pick a PDF file to edit.', 'error');
+        return;
+      }
+      setAssets([pdf]);
+      router.push('/pdfedit');
+    } catch (e) {
+      if (e instanceof PickerCancelled) return;
+      toast.show('Could not open that file.', 'error');
+    }
+  };
   const refresh = useFilesStore((s) => s.refresh);
   const loading = useFilesStore((s) => s.loading);
 
@@ -94,11 +115,17 @@ export default function Home() {
               <Ionicons name="swap-horizontal" size={40} color="rgba(255,255,255,0.9)" />
             </View>
 
-            <View style={{ marginTop: 18 }}>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
               <Pressable onPress={() => router.push('/upload')} style={[styles.heroBtn, { backgroundColor: '#fff' }]}>
                 <Ionicons name="cloud-upload-outline" size={18} color={palette.accent} />
                 <Text variant="bodyStrong" style={{ color: palette.accent, marginLeft: 8 }}>
-                  Upload a document
+                  Convert
+                </Text>
+              </Pressable>
+              <Pressable onPress={editPdf} style={[styles.heroBtn, styles.heroBtnGhost]}>
+                <Ionicons name="create-outline" size={18} color="#fff" />
+                <Text variant="bodyStrong" style={{ color: '#fff', marginLeft: 8 }}>
+                  Edit PDF
                 </Text>
               </Pressable>
             </View>
