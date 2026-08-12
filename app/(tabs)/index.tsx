@@ -1,12 +1,12 @@
-/** Home dashboard: greeting, primary actions, quick conversions, recents, history. */
+/** Home dashboard: greeting, search, hero CTA, quick conversions, recents, activity. */
 import React, { useCallback } from 'react';
-import { View, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/theme';
+import { useTheme, palette } from '@/theme';
 import { Text } from '@/components/Text';
-import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { SectionHeader } from '@/components/SectionHeader';
 import { QuickActionCard } from '@/components/QuickActionCard';
@@ -43,73 +43,75 @@ export default function Home() {
   const completed = files.filter((f) => f.status === 'completed');
   const recent = completed.slice(0, 8);
   const historyPreview = files.slice(0, 4);
-
   const gap = theme.spacing.md;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <StatusBar style="dark" />
       <ScrollView
-        contentContainerStyle={{
-          paddingTop: insets.top + theme.spacing.md,
-          paddingBottom: insets.bottom + 90,
-        }}
+        contentContainerStyle={{ paddingTop: insets.top + theme.spacing.md, paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={theme.colors.accent} />}
       >
-        {/* Greeting */}
-        <View style={{ paddingHorizontal: theme.spacing.xl, flexDirection: 'row', alignItems: 'center' }}>
+        {/* Header */}
+        <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text variant="caption" color="muted">
-              {greetingForNow()}
+              {greetingForNow()} 👋
             </Text>
             <Text variant="h1" style={{ marginTop: 2 }}>
               Let's convert
             </Text>
           </View>
-          <Pressable
-            onPress={() => router.push('/(tabs)/settings')}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 14,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: theme.colors.surface,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-            }}
-          >
-            <Ionicons name="person-outline" size={20} color={theme.colors.text} />
+          <Pressable onPress={() => router.push('/(tabs)/history')} style={[styles.iconBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Ionicons name="notifications-outline" size={20} color={theme.colors.text} />
+          </Pressable>
+          <Pressable onPress={() => router.push('/(tabs)/settings')} style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
+            <Ionicons name="person" size={20} color="#fff" />
           </Pressable>
         </View>
 
-        {/* Primary actions */}
-        <View style={{ paddingHorizontal: theme.spacing.xl, marginTop: theme.spacing.xl }}>
-          <Card padded elevation="md" style={{ backgroundColor: theme.colors.accent, borderColor: 'transparent' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ flex: 1, paddingRight: theme.spacing.md }}>
-                <Text variant="h3" color="onAccent">
-                  Convert a document
+        {/* Search */}
+        <Pressable onPress={() => router.push('/(tabs)/files')} style={{ paddingHorizontal: theme.spacing.xl, marginTop: theme.spacing.lg }}>
+          <View style={[styles.search, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Ionicons name="search" size={18} color={theme.colors.textFaint} />
+            <Text variant="body" color="faint" style={{ marginLeft: 10 }}>
+              Search your files…
+            </Text>
+          </View>
+        </Pressable>
+
+        {/* Hero banner */}
+        <View style={{ paddingHorizontal: theme.spacing.xl, marginTop: theme.spacing.lg }}>
+          <View style={[styles.hero, theme.shadows.md]}>
+            <View style={styles.heroGlow} />
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, paddingRight: 8 }}>
+                <Text variant="h2" style={{ color: '#fff' }}>
+                  Your document,{'\n'}editable in seconds
                 </Text>
-                <Text variant="caption" color="onAccent" style={{ opacity: 0.85, marginTop: 4 }}>
-                  Images & PDFs → Word, Excel, PDF or text
+                <Text variant="caption" style={{ color: 'rgba(255,255,255,0.82)', marginTop: 8, lineHeight: 19 }}>
+                  Scan or upload — get Word, Excel, PDF or text back.
                 </Text>
               </View>
-              <Ionicons name="documents-outline" size={40} color="#fff" style={{ opacity: 0.9 }} />
+              <Ionicons name="documents" size={40} color="rgba(255,255,255,0.9)" />
             </View>
-            <View style={{ height: theme.spacing.lg }} />
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: theme.radius.md }}>
-              <Button
-                label="Upload File"
-                icon="cloud-upload-outline"
-                variant="secondary"
-                onPress={() => router.push('/upload')}
-                style={{ backgroundColor: '#fff' }}
-              />
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+              <Pressable onPress={() => router.push('/upload')} style={[styles.heroBtn, { backgroundColor: '#fff' }]}>
+                <Ionicons name="cloud-upload-outline" size={18} color={palette.accent} />
+                <Text variant="bodyStrong" style={{ color: palette.accent, marginLeft: 8 }}>
+                  Upload File
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => router.push('/scan')} style={[styles.heroBtn, styles.heroBtnGhost]}>
+                <Ionicons name="scan-outline" size={18} color="#fff" />
+                <Text variant="bodyStrong" style={{ color: '#fff', marginLeft: 8 }}>
+                  Scan
+                </Text>
+              </Pressable>
             </View>
-          </Card>
-          <View style={{ height: theme.spacing.md }} />
-          <Button label="Scan Document" icon="scan-outline" variant="secondary" onPress={() => router.push('/scan')} />
+          </View>
         </View>
 
         {/* Quick conversions */}
@@ -133,11 +135,7 @@ export default function Home() {
             <View style={{ paddingHorizontal: theme.spacing.xl }}>
               <SectionHeader title="Recent files" actionLabel="See all" onAction={() => router.push('/(tabs)/files')} />
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: theme.spacing.xl, gap }}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: theme.spacing.xl, gap }}>
               {recent.map((f) => (
                 <RecentFileCard key={f.id} record={f} onPress={() => router.push({ pathname: '/result', params: { id: f.id } })} />
               ))}
@@ -145,7 +143,7 @@ export default function Home() {
           </View>
         )}
 
-        {/* History preview */}
+        {/* Activity */}
         <View style={{ paddingHorizontal: theme.spacing.xl, marginTop: theme.spacing.xxl }}>
           <SectionHeader
             title="Recent activity"
@@ -166,12 +164,7 @@ export default function Home() {
           ) : (
             <Card padded={false} style={{ overflow: 'hidden' }}>
               {historyPreview.map((f) => (
-                <FileRow
-                  key={f.id}
-                  record={f}
-                  mode="history"
-                  onPress={() => router.push({ pathname: '/result', params: { id: f.id } })}
-                />
+                <FileRow key={f.id} record={f} mode="history" onPress={() => router.push({ pathname: '/result', params: { id: f.id } })} />
               ))}
             </Card>
           )}
@@ -180,3 +173,41 @@ export default function Home() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 10 },
+  iconBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  avatar: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+  },
+  hero: {
+    backgroundColor: palette.accentDeep,
+    borderRadius: 22,
+    padding: 20,
+    overflow: 'hidden',
+  },
+  heroGlow: {
+    position: 'absolute',
+    right: -40,
+    top: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  heroBtn: {
+    flex: 1,
+    height: 46,
+    borderRadius: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroBtnGhost: { backgroundColor: 'rgba(255,255,255,0.16)' },
+});

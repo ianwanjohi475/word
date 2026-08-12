@@ -7,7 +7,7 @@
  * into a `DocumentModel` the generators can turn into Word/Excel/PDF/TXT.
  */
 import { GROQ_API_KEY, GROQ_BASE_URL, GROQ_MODEL, GROQ_MODEL_FALLBACKS, hasApiKey } from '@/config';
-import { readBase64 } from './files';
+import { readAsBase64 } from './io';
 import type { DocBlock, DocumentModel } from '@/types';
 
 /** A typed error so the UI can show the right message + retry affordance. */
@@ -251,7 +251,7 @@ export async function extractDocumentFromImage(
     );
   }
 
-  const base64 = await readBase64(imageUri);
+  const base64 = await readAsBase64(imageUri);
   const dataUrl = `data:${guessImageMime(imageUri)};base64,${base64}`;
 
   // De-duplicated model attempt order: configured model first, then fallbacks.

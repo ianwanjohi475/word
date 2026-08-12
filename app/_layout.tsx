@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { ToastProvider } from '@/components/Toast';
 import { PdfRasterizerHost } from '@/components/PdfRasterizerHost';
 import { initDatabase } from '@/db/database';
@@ -17,7 +17,6 @@ import { palette } from '@/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
   const hydrated = useSettingsStore((s) => s.hydrated);
   const [ready, setReady] = useState(false);
 
@@ -39,8 +38,6 @@ export default function RootLayout() {
 
   if (!ready || !hydrated) return null;
 
-  const isDark = scheme === 'dark';
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -48,7 +45,7 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: { backgroundColor: isDark ? palette.neutral950 : palette.neutral50 },
+              contentStyle: { backgroundColor: palette.neutral50 },
               animation: 'slide_from_right',
             }}
           >

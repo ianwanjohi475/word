@@ -4,52 +4,55 @@
  * Everything visual (color, spacing, radius, type, shadow, motion) is defined
  * here and consumed through the `useTheme()` hook so screens never hardcode a
  * hex value or a magic number. Spacing follows an 8px baseline grid.
+ *
+ * The palette is a clean, premium light theme built around a single deep-teal
+ * accent — trustworthy and productive, in the spirit of modern service apps.
  */
 
 export const palette = {
-  // Brand accent — a confident indigo/violet. Used sparingly for primary
-  // actions, active states and focus. One accent, applied consistently.
-  accent: '#5B5BF0',
-  accentPressed: '#4A4AD6',
-  accentSoft: '#EEEEFE',
-  accentSoftDark: '#1E1E3A',
+  // Brand accent — a confident deep teal. Used for primary actions, active
+  // states and focus. One accent, applied consistently.
+  accent: '#0E8C6B',
+  accentPressed: '#0B6E54',
+  accentDeep: '#0A5C49', // darker teal for banners / hero surfaces
+  accentSoft: '#E4F3EE',
+  accentSoftDark: '#12352C',
 
   // Neutrals (light)
   white: '#FFFFFF',
   neutral0: '#FFFFFF',
-  neutral50: '#F7F8FA',
-  neutral100: '#F1F3F6',
-  neutral150: '#E7EAF0',
-  neutral200: '#DCE0E8',
-  neutral300: '#C3C9D4',
-  neutral400: '#9BA3B2',
-  neutral500: '#6B7385',
-  neutral600: '#4E5566',
-  neutral700: '#363C4A',
-  neutral800: '#232834',
-  neutral900: '#151922',
-  neutral950: '#0B1120',
+  neutral50: '#F6F8F9',
+  neutral100: '#F0F2F4',
+  neutral150: '#E8EBEE',
+  neutral200: '#DEE2E7',
+  neutral300: '#C6CCD3',
+  neutral400: '#9AA2AC',
+  neutral500: '#6B7480',
+  neutral600: '#4E5763',
+  neutral700: '#39404A',
+  neutral800: '#252B33',
+  neutral900: '#141A20',
+  neutral950: '#0B1015',
 
   // Semantic
-  success: '#1EAE72',
-  successSoft: '#E5F6EF',
-  warning: '#E9A23B',
-  warningSoft: '#FBF1E1',
-  danger: '#E5484D',
-  dangerSoft: '#FCECEC',
-  info: '#3B82F6',
+  success: '#12A66F',
+  successSoft: '#E3F5EC',
+  warning: '#E5942B',
+  warningSoft: '#FBF0DF',
+  danger: '#E4483D',
+  dangerSoft: '#FCEBEA',
+  info: '#2E76E8',
 } as const;
 
 /**
- * Per-format brand colors used for file-type icons and accents. These give the
- * app the "beautiful file-format icons" feel while staying inside the system.
+ * Per-format brand colors used for file-type icons and accents.
  */
 export const formatColors = {
-  word: { base: '#2B579A', soft: '#E7EEF8', on: '#FFFFFF' },
+  word: { base: '#2B579A', soft: '#E8EFF9', on: '#FFFFFF' },
   excel: { base: '#1D7044', soft: '#E4F2EA', on: '#FFFFFF' },
   pdf: { base: '#D8362A', soft: '#FBE9E7', on: '#FFFFFF' },
   txt: { base: '#5B6472', soft: '#EDEFF3', on: '#FFFFFF' },
-  image: { base: '#7A5AF0', soft: '#EEEAFD', on: '#FFFFFF' },
+  image: { base: '#0E8C6B', soft: '#E4F3EE', on: '#FFFFFF' },
 } as const;
 
 export const spacing = {
@@ -77,18 +80,16 @@ export const radius = {
 } as const;
 
 export const typography = {
-  // A tight, modern type scale. Font families resolve to the system font by
-  // default; the app loads Inter as the brand face at startup.
-  display: { fontSize: 32, lineHeight: 38, fontWeight: '700' as const, letterSpacing: -0.5 },
-  h1: { fontSize: 26, lineHeight: 32, fontWeight: '700' as const, letterSpacing: -0.4 },
+  display: { fontSize: 32, lineHeight: 38, fontWeight: '800' as const, letterSpacing: -0.6 },
+  h1: { fontSize: 27, lineHeight: 33, fontWeight: '800' as const, letterSpacing: -0.5 },
   h2: { fontSize: 21, lineHeight: 27, fontWeight: '700' as const, letterSpacing: -0.3 },
-  h3: { fontSize: 17, lineHeight: 23, fontWeight: '600' as const, letterSpacing: -0.2 },
+  h3: { fontSize: 17, lineHeight: 23, fontWeight: '700' as const, letterSpacing: -0.2 },
   bodyLg: { fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
   bodyStrong: { fontSize: 15, lineHeight: 22, fontWeight: '600' as const },
   caption: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const },
   captionStrong: { fontSize: 13, lineHeight: 18, fontWeight: '600' as const },
-  micro: { fontSize: 11, lineHeight: 15, fontWeight: '600' as const, letterSpacing: 0.3 },
+  micro: { fontSize: 11, lineHeight: 15, fontWeight: '700' as const, letterSpacing: 0.4 },
 } as const;
 
 export const motion = {

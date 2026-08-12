@@ -14,7 +14,7 @@ import { FormatIcon, SourceGlyph } from '@/components/FormatIcon';
 import { useToast } from '@/components/Toast';
 import { useConversionStore } from '@/store/useConversionStore';
 import { getFileById } from '@/db/database';
-import { downloadFile, shareFile } from '@/services/files';
+import { deliver, shareRecord } from '@/services/io';
 import { FORMAT_META, sourceFormatLabel } from '@/utils/formats';
 import { formatBytes } from '@/utils/format';
 import type { FileRecord } from '@/types';
@@ -83,11 +83,9 @@ export default function Result() {
   const onDownload = async () => {
     setDownloading(true);
     try {
-      const res = await downloadFile(record.path, record.name, record.outputFormat);
-      if (res.kind === 'saved') toast.show(`Saved to ${res.location}`, 'success');
-      else if (res.kind === 'shared') toast.show('Choose “Save to Files” to download', 'info');
-    } catch {
-      toast.show('Could not save the file.', 'error');
+      const res = await deliver(record);
+      if (res.ok) toast.show(res.message ?? 'Downloaded', 'success');
+      else toast.show(res.message ?? 'Could not save the file.', 'error');
     } finally {
       setDownloading(false);
     }
@@ -96,9 +94,8 @@ export default function Result() {
   const onShare = async () => {
     setSharing(true);
     try {
-      await shareFile(record.path, record.outputFormat);
-    } catch (e) {
-      toast.show((e as Error).message || 'Could not share the file.', 'error');
+      const res = await shareRecord(record);
+      if (!res.ok && res.message) toast.show(res.message, 'error');
     } finally {
       setSharing(false);
     }

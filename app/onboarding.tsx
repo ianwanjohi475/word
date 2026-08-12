@@ -1,8 +1,11 @@
-/** First-launch onboarding: 3 skippable slides, persists a completion flag. */
+/** First-launch onboarding: 3 skippable slides. Controlled carousel so the
+ * primary button works identically on web and native (no reliance on momentum
+ * scroll events, which don't fire with a mouse). */
 import React, { useRef, useState } from 'react';
-import { View, FlatList, useWindowDimensions, Pressable, StyleSheet } from 'react-native';
+import { View, ScrollView, useWindowDimensions, Pressable, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '@/theme';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
@@ -20,20 +23,20 @@ const SLIDES: Slide[] = [
   {
     key: 'transform',
     art: <ArtTransform />,
-    title: 'Turn Any Document Into Editable Files',
+    title: 'Turn any document into editable files',
     body: 'Snap or upload a document and Converta rebuilds it as a Word, Excel, PDF or text file you can actually edit.',
   },
   {
     key: 'scan',
     art: <ArtScan />,
     title: 'Smart OCR that understands layout',
-    body: 'Advanced OCR reads your images and PDFs, preserving headings, paragraphs and tables — not just raw text.',
+    body: 'Advanced AI reads your images and PDFs, keeping headings, paragraphs and tables intact — not just raw text.',
   },
   {
     key: 'edit',
     art: <ArtEdit />,
-    title: 'Review, edit, and export anywhere',
-    body: 'Fix any detail, tweak tables cell-by-cell, then download or share. Everything stays private on your device.',
+    title: 'Review, edit and export anywhere',
+    body: 'Fix any detail, tweak tables cell by cell, then download or share. Everything stays private on your device.',
   },
 ];
 
@@ -42,7 +45,7 @@ export default function Onboarding() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const listRef = useRef<FlatList<Slide>>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
   const complete = useSettingsStore((s) => s.completeOnboarding);
 
@@ -51,43 +54,57 @@ export default function Onboarding() {
     router.replace('/(tabs)');
   };
 
-  const next = () => {
-    if (index < SLIDES.length - 1) {
-      listRef.current?.scrollToIndex({ index: index + 1, animated: true });
-    } else {
-      finish();
-    }
+  const goTo = (i: number) => {
+    const clamped = Math.max(0, Math.min(SLIDES.length - 1, i));
+    setIndex(clamped);
+    scrollRef.current?.scrollTo({ x: clamped * width, animated: true });
   };
+
+  const next = () => {
+    if (index < SLIDES.length - 1) goTo(index + 1);
+    else finish();
+  };
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (i !== index) setIndex(i);
+  };
+
+  const isLast = index === SLIDES.length - 1;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg, paddingTop: insets.top }}>
+      <StatusBar style="dark" />
       <View style={styles.topBar}>
-        <Pressable onPress={finish} hitSlop={10} style={{ opacity: index === SLIDES.length - 1 ? 0 : 1 }}>
+        <View style={styles.brandRow}>
+          <View style={[styles.brandDot, { backgroundColor: theme.colors.accent }]} />
+          <Text variant="bodyStrong">Converta</Text>
+        </View>
+        <Pressable onPress={finish} hitSlop={10} style={{ opacity: isLast ? 0 : 1 }} disabled={isLast}>
           <Text variant="captionStrong" color="muted">
             Skip
           </Text>
         </Pressable>
       </View>
 
-      <FlatList
-        ref={listRef}
-        data={SLIDES}
-        keyExtractor={(s) => s.key}
+      <ScrollView
+        ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
-        renderItem={({ item }) => (
-          <View style={{ width, paddingHorizontal: theme.spacing.xxl }}>
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        style={{ flex: 1 }}
+      >
+        {SLIDES.map((item) => (
+          <View key={item.key} style={{ width, paddingHorizontal: theme.spacing.xxl }}>
             <View style={{ flex: 1, justifyContent: 'center' }}>
               <View
-                style={{
-                  backgroundColor: theme.colors.surface,
-                  borderRadius: theme.radius.xxl,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  marginBottom: theme.spacing.huge,
-                }}
+                style={[
+                  styles.artCard,
+                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                  theme.shadows.md,
+                ]}
               >
                 {item.art}
               </View>
@@ -99,28 +116,29 @@ export default function Onboarding() {
               </Text>
             </View>
           </View>
-        )}
-      />
+        ))}
+      </ScrollView>
 
       <View style={{ paddingHorizontal: theme.spacing.xxl, paddingBottom: insets.bottom + theme.spacing.xl }}>
         <View style={styles.dots}>
           {SLIDES.map((s, i) => (
-            <View
-              key={s.key}
-              style={{
-                width: i === index ? 22 : 8,
-                height: 8,
-                borderRadius: 4,
-                marginHorizontal: 3,
-                backgroundColor: i === index ? theme.colors.accent : theme.colors.borderStrong,
-              }}
-            />
+            <Pressable key={s.key} onPress={() => goTo(i)} hitSlop={8}>
+              <View
+                style={{
+                  width: i === index ? 24 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  marginHorizontal: 3,
+                  backgroundColor: i === index ? theme.colors.accent : theme.colors.borderStrong,
+                }}
+              />
+            </Pressable>
           ))}
         </View>
         <Button
-          label={index === SLIDES.length - 1 ? 'Get Started' : 'Continue'}
+          label={isLast ? 'Get Started' : 'Continue'}
           onPress={next}
-          iconRight={index === SLIDES.length - 1 ? 'arrow-forward' : undefined}
+          iconRight={isLast ? 'arrow-forward' : undefined}
         />
       </View>
     </View>
@@ -128,6 +146,20 @@ export default function Onboarding() {
 }
 
 const styles = StyleSheet.create({
-  topBar: { height: 44, justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: 24 },
+  topBar: {
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandDot: { width: 20, height: 20, borderRadius: 7 },
+  artCard: {
+    borderRadius: 28,
+    borderWidth: 1,
+    marginBottom: 40,
+    paddingVertical: 8,
+  },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
 });

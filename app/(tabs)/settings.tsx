@@ -13,7 +13,7 @@ import { FormatIcon } from '@/components/FormatIcon';
 import { DialogBase, ConfirmDialog } from '@/components/Dialog';
 import { useToast } from '@/components/Toast';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { computeStorageUsage, clearWorkCache } from '@/services/files';
+import { storageUsage, clearCache } from '@/services/io';
 import { hasApiKey, GROQ_MODEL } from '@/config';
 import { OUTPUT_FORMATS, FORMAT_META } from '@/utils/formats';
 import { formatBytes } from '@/utils/format';
@@ -98,7 +98,7 @@ export default function Settings() {
 
   useFocusEffect(
     useCallback(() => {
-      computeStorageUsage().then(setUsage).catch(() => setUsage(0));
+      storageUsage().then(setUsage).catch(() => setUsage(0));
     }, [])
   );
 
@@ -320,9 +320,9 @@ export default function Settings() {
         confirmLabel="Clear cache"
         icon="refresh-outline"
         onConfirm={async () => {
-          await clearWorkCache();
+          await clearCache();
           setConfirmClearCache(false);
-          computeStorageUsage().then(setUsage);
+          storageUsage().then(setUsage);
           toast.show('Cache cleared', 'success');
         }}
         onCancel={() => setConfirmClearCache(false)}

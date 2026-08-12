@@ -7,7 +7,6 @@
  * Progress is reported through `onProgress` so the OCR screen can animate the
  * staged steps.
  */
-import * as FileSystem from 'expo-file-system/legacy';
 import type {
   DocumentModel,
   FileRecord,
@@ -17,11 +16,7 @@ import type {
 } from '@/types';
 import { extractDocumentFromImage } from './groq';
 import { rasterizePdf } from './pdfRasterizer';
-import { generateDocx } from './generators/docx';
-import { generateXlsx } from './generators/xlsx';
-import { generatePdf } from './generators/pdf';
-import { generateTxt } from './generators/txt';
-import { resolveOutputPath, writeBase64, writeUtf8, getFileSize } from './files';
+import { persistOutput } from './io';
 import { insertFile } from '@/db/database';
 import { uid } from '@/utils/id';
 import { stripExtension } from '@/utils/format';
@@ -75,31 +70,8 @@ export async function generateFile(
   format: OutputFormat,
   baseName: string
 ): Promise<{ path: string; name: string; size: number }> {
-  const { path, name } = await resolveOutputPath(baseName, format);
-
-  switch (format) {
-    case 'word': {
-      const base64 = await generateDocx(doc);
-      const size = await writeBase64(path, base64);
-      return { path, name, size };
-    }
-    case 'excel': {
-      const base64 = generateXlsx(doc);
-      const size = await writeBase64(path, base64);
-      return { path, name, size };
-    }
-    case 'txt': {
-      const text = generateTxt(doc);
-      const size = await writeUtf8(path, text);
-      return { path, name, size };
-    }
-    case 'pdf': {
-      const tempUri = await generatePdf(doc);
-      await FileSystem.moveAsync({ from: tempUri, to: path });
-      const size = await getFileSize(path);
-      return { path, name, size };
-    }
-  }
+  // Saving is platform-specific (native filesystem vs. browser download).
+  return persistOutput(doc, format, baseName);
 }
 
 export interface ConvertParams {

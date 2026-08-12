@@ -13,7 +13,7 @@ import { FileRowSkeleton } from '@/components/Skeleton';
 import { ConfirmDialog, PromptDialog } from '@/components/Dialog';
 import { useToast } from '@/components/Toast';
 import { useFilesStore } from '@/store/useFilesStore';
-import { shareFile } from '@/services/files';
+import { shareRecord } from '@/services/io';
 import { sanitizeFileName } from '@/utils/format';
 import { FORMAT_META } from '@/utils/formats';
 import type { FileRecord, OutputFormat } from '@/types';
@@ -74,11 +74,8 @@ export default function Files() {
   }, [files, filter, query, sort]);
 
   const onShare = async (rec: FileRecord) => {
-    try {
-      await shareFile(rec.path, rec.outputFormat);
-    } catch (e) {
-      toast.show((e as Error).message || 'Could not share.', 'error');
-    }
+    const res = await shareRecord(rec);
+    if (!res.ok && res.message) toast.show(res.message, 'error');
   };
 
   const confirmRename = (value: string) => {

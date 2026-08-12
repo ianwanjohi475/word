@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import type { SourceAsset, SourceFormat } from '@/types';
 import { uid } from '@/utils/id';
-import { importToWork } from './files';
+import { importSource } from './io';
 
 function detectSourceFormat(mime?: string, name?: string, uri?: string): SourceFormat {
   const hay = `${mime ?? ''} ${name ?? ''} ${uri ?? ''}`.toLowerCase();
@@ -45,7 +45,7 @@ export async function pickFromGallery(): Promise<SourceAsset[]> {
   return Promise.all(
     result.assets.map(async (a, i) => {
       const name = a.fileName ?? `Photo ${i + 1}.jpg`;
-      const uri = await importToWork(a.uri, name);
+      const uri = await importSource(a.uri, name);
       return {
         id: uid('a_'),
         uri,
@@ -71,7 +71,7 @@ export async function pickDocuments(): Promise<SourceAsset[]> {
   return Promise.all(
     result.assets.map(async (a) => {
       const sourceFormat = detectSourceFormat(a.mimeType, a.name, a.uri);
-      const uri = await importToWork(a.uri, a.name);
+      const uri = await importSource(a.uri, a.name);
       return {
         id: uid('a_'),
         uri,
@@ -101,7 +101,7 @@ export async function capturePhoto(): Promise<SourceAsset[]> {
   return Promise.all(
     result.assets.map(async (a, i) => {
       const name = a.fileName ?? `Scan ${Date.now()}-${i}.jpg`;
-      const uri = await importToWork(a.uri, name);
+      const uri = await importSource(a.uri, name);
       return {
         id: uid('a_'),
         uri,
@@ -118,7 +118,7 @@ export async function capturePhoto(): Promise<SourceAsset[]> {
 /** Build a SourceAsset from a captured camera photo uri (custom scan screen). */
 export async function assetFromCapture(uri: string): Promise<SourceAsset> {
   const name = `Scan ${Date.now()}.jpg`;
-  const stored = await importToWork(uri, name);
+  const stored = await importSource(uri, name);
   return {
     id: uid('a_'),
     uri: stored,

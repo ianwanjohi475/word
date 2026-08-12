@@ -13,7 +13,7 @@ import { FileRowSkeleton } from '@/components/Skeleton';
 import { ConfirmDialog } from '@/components/Dialog';
 import { useToast } from '@/components/Toast';
 import { useFilesStore } from '@/store/useFilesStore';
-import { downloadFile, shareFile } from '@/services/files';
+import { deliver, shareRecord } from '@/services/io';
 import { FORMAT_META, sourceFormatLabel } from '@/utils/formats';
 import { formatDateTime } from '@/utils/format';
 import type { FileRecord } from '@/types';
@@ -62,9 +62,8 @@ export default function History() {
     if (rec.status !== 'completed') return;
     setBusyId(rec.id);
     try {
-      await shareFile(rec.path, rec.outputFormat);
-    } catch (e) {
-      toast.show((e as Error).message || 'Could not share.', 'error');
+      const res = await shareRecord(rec);
+      if (!res.ok && res.message) toast.show(res.message, 'error');
     } finally {
       setBusyId(null);
     }
@@ -74,11 +73,9 @@ export default function History() {
     if (rec.status !== 'completed') return;
     setBusyId(rec.id);
     try {
-      const res = await downloadFile(rec.path, rec.name, rec.outputFormat);
-      if (res.kind === 'saved') toast.show(`Saved to ${res.location}`, 'success');
-      else if (res.kind === 'shared') toast.show('Choose “Save to Files” to download', 'info');
-    } catch {
-      toast.show('Could not download.', 'error');
+      const res = await deliver(rec);
+      if (res.ok) toast.show(res.message ?? 'Downloaded', 'success');
+      else toast.show(res.message ?? 'Could not download.', 'error');
     } finally {
       setBusyId(null);
     }
