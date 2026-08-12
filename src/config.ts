@@ -25,10 +25,11 @@ export const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY ?? '';
 export const GROQ_MODEL =
   process.env.EXPO_PUBLIC_GROQ_MODEL && process.env.EXPO_PUBLIC_GROQ_MODEL.length > 0
     ? process.env.EXPO_PUBLIC_GROQ_MODEL
-    : 'meta-llama/llama-4-scout-17b-16e-instruct';
+    : 'qwen/qwen3.6-27b';
 
 /** Ordered fallbacks tried if the primary model is decommissioned/unavailable. */
 export const GROQ_MODEL_FALLBACKS = [
+  'qwen/qwen3.6-27b',
   'meta-llama/llama-4-scout-17b-16e-instruct',
   'meta-llama/llama-4-maverick-17b-128e-instruct',
 ];

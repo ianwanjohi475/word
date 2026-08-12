@@ -12,6 +12,7 @@ import { generateXlsx } from './generators/xlsx';
 import { generateTxt } from './generators/txt';
 import { generatePdf } from './generators/pdf';
 import * as FileSystem from 'expo-file-system/legacy';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import {
   resolveOutputPath,
   writeBase64,
@@ -28,6 +29,26 @@ import {
 /** Read any source asset (file:// uri) as base64 for the OCR request. */
 export async function readAsBase64(uri: string): Promise<string> {
   return readBase64(uri);
+}
+
+/**
+ * Downscale + compress a source image before OCR. Vision models bill by image
+ * size, and free Groq tiers have a low per-minute token budget, so a full-res
+ * phone photo blows the limit. ~1000px JPEG keeps text legible while staying
+ * well under budget.
+ */
+export async function readImageForOcr(uri: string): Promise<{ base64: string; mime: string }> {
+  try {
+    const result = await manipulateAsync(uri, [{ resize: { width: 1000 } }], {
+      compress: 0.55,
+      format: SaveFormat.JPEG,
+      base64: true,
+    });
+    if (result.base64) return { base64: result.base64, mime: 'image/jpeg' };
+  } catch {
+    /* fall back to the original bytes */
+  }
+  return { base64: await readBase64(uri), mime: 'image/jpeg' };
 }
 
 /** Bring a picked/captured asset into app-managed storage. */

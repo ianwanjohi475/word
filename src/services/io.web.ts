@@ -61,6 +61,36 @@ export async function readAsBase64(uri: string): Promise<string> {
   return dataUrl.replace(/^data:[^;]+;base64,/, '');
 }
 
+/**
+ * Downscale + compress the source image on a canvas before OCR so large photos
+ * stay under Groq's per-minute token budget (see the native counterpart).
+ */
+export async function readImageForOcr(uri: string): Promise<{ base64: string; mime: string }> {
+  try {
+    const img: any = await new Promise((resolve, reject) => {
+      const image = new g.Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('image load failed'));
+      image.src = uri;
+    });
+    const maxW = 1000;
+    const scale = Math.min(1, maxW / (img.width || maxW));
+    const w = Math.max(1, Math.round((img.width || maxW) * scale));
+    const h = Math.max(1, Math.round((img.height || maxW) * scale));
+    const canvas = g.document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    const dataUrl: string = canvas.toDataURL('image/jpeg', 0.55);
+    return { base64: dataUrl.replace(/^data:[^;]+;base64,/, ''), mime: 'image/jpeg' };
+  } catch {
+    return { base64: await readAsBase64(uri), mime: 'image/jpeg' };
+  }
+}
+
 export async function importSource(uri: string): Promise<string> {
   // On web the picker already returns a usable blob/object URL — keep it as-is.
   return uri;

@@ -176,7 +176,11 @@ export default function Processing() {
           <View style={{ height: 28, width: '100%' }} />
           {error.retryable && <Button label="Try again" icon="refresh" onPress={retry} />}
           <View style={{ height: 10 }} />
-          <Button label="Back" variant="ghost" onPress={() => router.back()} />
+          <Button
+            label="Back"
+            variant="ghost"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+          />
         </View>
       </Screen>
     );

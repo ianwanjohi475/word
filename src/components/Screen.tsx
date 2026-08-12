@@ -24,7 +24,11 @@ export function ScreenHeader({ title, subtitle, showBack, onBack, right }: Heade
         {showBack && (
           <Pressable
             hitSlop={10}
-            onPress={() => (onBack ? onBack() : router.back())}
+            onPress={() => {
+              if (onBack) return onBack();
+              if (router.canGoBack()) router.back();
+              else router.replace('/(tabs)');
+            }}
             style={[
               styles.backBtn,
               { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border },

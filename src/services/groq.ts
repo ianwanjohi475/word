@@ -7,7 +7,7 @@
  * into a `DocumentModel` the generators can turn into Word/Excel/PDF/TXT.
  */
 import { GROQ_API_KEY, GROQ_BASE_URL, GROQ_MODEL, GROQ_MODEL_FALLBACKS, hasApiKey } from '@/config';
-import { readAsBase64 } from './io';
+import { readImageForOcr } from './io';
 import type { DocBlock, DocumentModel } from '@/types';
 
 /** A typed error so the UI can show the right message + retry affordance. */
@@ -162,7 +162,9 @@ async function callGroq(model: string, dataUrl: string, opts: CallOptions): Prom
   const body = {
     model,
     temperature: 0,
-    max_tokens: 8000,
+    // Kept modest so input + output stays under low free-tier per-minute token
+    // budgets. Enough for a full page of structured JSON.
+    max_tokens: 3500,
     response_format: { type: 'json_object' as const },
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -210,12 +212,21 @@ async function callGroq(model: string, dataUrl: string, opts: CallOptions): Prom
     if (res.status === 401 || res.status === 403) {
       throw new OcrError('auth', 'Invalid or missing Groq API key. Check your key in Settings.', false);
     }
-    if (res.status === 429) {
-      throw new OcrError('rate_limit', 'Groq rate limit reached. Please wait a moment and retry.');
+    if (res.status === 429 || /rate limit|tokens per minute|\bTPM\b/i.test(detail)) {
+      throw new OcrError(
+        'rate_limit',
+        'Groq’s free per-minute limit was hit. Wait ~30 seconds and tap Try again.'
+      );
+    }
+    if (/too large|request too large|reduce your message|maximum context/i.test(detail)) {
+      throw new OcrError(
+        'rate_limit',
+        'That image was a bit large for the free tier. Wait a few seconds and tap Try again.'
+      );
     }
     if (
       res.status === 404 ||
-      /decommission|not found|does not exist|deprecat/i.test(detail) ||
+      /decommission|not found|does not exist|deprecat|do not have access/i.test(detail) ||
       code === 'model_not_found'
     ) {
       throw new OcrError('model', detail || `Model "${model}" is unavailable.`);
@@ -294,8 +305,8 @@ export async function extractDocumentFromImage(
     );
   }
 
-  const base64 = await readAsBase64(imageUri);
-  const dataUrl = `data:${guessImageMime(imageUri)};base64,${base64}`;
+  const { base64, mime } = await readImageForOcr(imageUri);
+  const dataUrl = `data:${mime};base64,${base64}`;
 
   const discovered = await discoverVisionModels(opts.signal);
   // De-duplicated attempt order: configured model, discovered vision models, fallbacks.
