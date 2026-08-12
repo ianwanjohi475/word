@@ -14,9 +14,7 @@ import type {
   PipelineProgress,
   SourceAsset,
 } from '@/types';
-import { recognizeImage } from './ocr';
-import { rasterizePdf } from './pdfRasterizer';
-import { extractWord, extractPdfText } from './docExtract';
+import { extractWord, extractExcel, extractPdfText } from './docExtract';
 import { persistOutput } from './io';
 import { insertFile } from '@/db/database';
 import { uid } from '@/utils/id';
@@ -25,66 +23,44 @@ import { stripExtension } from '@/utils/format';
 type ProgressFn = (p: PipelineProgress) => void;
 
 /**
- * Extract a DocumentModel from any source asset:
- *  - Word (.docx): parse the text layer directly (no OCR) → enables Word → PDF.
- *  - PDF: use the embedded text layer when present (fast, exact → PDF → Word);
- *    fall back to rasterize + OCR for scanned PDFs.
- *  - Image: OCR (Groq, with local Tesseract fallback).
+ * Extract a DocumentModel from a source document (no OCR — fully local):
+ *  - Word (.docx): mammoth text layer.
+ *  - Excel (.xlsx/.csv): SheetJS → tables per sheet.
+ *  - PDF: pdf.js embedded text layer (web). Scanned PDFs (no text) error clearly.
+ *
+ * Kept named `runOcr` so existing callers (the job controller) stay unchanged.
  */
 export async function runOcr(
   asset: SourceAsset,
   onProgress?: ProgressFn,
-  signal?: AbortSignal
+  _signal?: AbortSignal
 ): Promise<DocumentModel> {
-  onProgress?.({ stage: 'uploading', progress: 0.12, message: 'Preparing your document' });
+  onProgress?.({ stage: 'uploading', progress: 0.18, message: 'Preparing your document' });
 
-  // --- Word document: direct text extraction, no OCR needed. ---
   if (asset.sourceFormat === 'word') {
-    onProgress?.({ stage: 'detecting', progress: 0.4, message: 'Reading document' });
+    onProgress?.({ stage: 'detecting', progress: 0.45, message: 'Reading Word document' });
     const doc = await extractWord(asset.uri);
     onProgress?.({ stage: 'layout', progress: 0.66, message: 'Understanding layout' });
     return doc;
   }
 
-  // --- PDF with a real text layer: extract directly. ---
-  if (asset.sourceFormat === 'pdf') {
-    onProgress?.({ stage: 'detecting', progress: 0.3, message: 'Reading PDF text' });
-    const textDoc = await extractPdfText(asset.uri).catch(() => null);
-    if (textDoc && textDoc.blocks.length > 0) {
-      onProgress?.({ stage: 'layout', progress: 0.66, message: 'Understanding layout' });
-      return textDoc;
-    }
+  if (asset.sourceFormat === 'excel') {
+    onProgress?.({ stage: 'detecting', progress: 0.45, message: 'Reading spreadsheet' });
+    const doc = await extractExcel(asset.uri);
+    onProgress?.({ stage: 'layout', progress: 0.66, message: 'Understanding tables' });
+    return doc;
   }
 
-  // --- Otherwise OCR the image(s). PDFs without text are rasterized first. ---
-  let pageUris: string[];
-  if (asset.sourceFormat === 'pdf') {
-    onProgress?.({ stage: 'uploading', progress: 0.2, message: 'Rendering PDF pages' });
-    pageUris = await rasterizePdf(asset.uri);
-  } else {
-    pageUris = [asset.uri];
+  // PDF
+  onProgress?.({ stage: 'detecting', progress: 0.4, message: 'Reading PDF text' });
+  const textDoc = await extractPdfText(asset.uri).catch(() => null);
+  if (!textDoc || textDoc.blocks.length === 0) {
+    throw new Error(
+      'This PDF has no selectable text (it looks like a scan). Try a text-based PDF or a Word/Excel file.'
+    );
   }
-
-  onProgress?.({ stage: 'detecting', progress: 0.35, message: 'Detecting text' });
-
-  const merged: DocumentModel = { blocks: [], hasTables: false };
-  const total = pageUris.length;
-  for (let i = 0; i < total; i++) {
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-    // eslint-disable-next-line no-await-in-loop
-    const page = await recognizeImage(pageUris[i], { signal });
-    if (i === 0 && page.title) merged.title = page.title;
-    if (!merged.language && page.language) merged.language = page.language;
-    merged.blocks.push(...page.blocks);
-    merged.hasTables = merged.hasTables || page.hasTables;
-    onProgress?.({
-      stage: 'layout',
-      progress: 0.35 + (0.3 * (i + 1)) / total,
-      message: total > 1 ? `Understanding layout (page ${i + 1} of ${total})` : 'Understanding layout',
-    });
-  }
-
-  return merged;
+  onProgress?.({ stage: 'layout', progress: 0.66, message: 'Understanding layout' });
+  return textDoc;
 }
 
 /**

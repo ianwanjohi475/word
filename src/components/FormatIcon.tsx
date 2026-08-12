@@ -48,26 +48,21 @@ export function FormatIcon({ format, size = 44 }: Props) {
   );
 }
 
-/** Small source-format glyph (image / PDF / Word) for the history "from" side. */
+/** Small source-format glyph (PDF / Word / Excel) for the history "from" side. */
 export function SourceGlyph({ format, size = 20 }: { format: SourceFormat; size?: number }) {
-  const c = format === 'pdf' ? formatColors.pdf : format === 'word' ? formatColors.word : formatColors.image;
+  const c = format === 'pdf' ? formatColors.pdf : format === 'excel' ? formatColors.excel : formatColors.word;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      {format === 'pdf' || format === 'word' ? (
-        <>
-          <Path
-            d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
-            fill={c.soft}
-            stroke={c.base}
-            strokeWidth={1.6}
-          />
-          <Path d="M8 12h8M8 15h8M8 9h4" stroke={c.base} strokeWidth={1.4} fill="none" strokeLinecap="round" />
-        </>
+      <Path
+        d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
+        fill={c.soft}
+        stroke={c.base}
+        strokeWidth={1.6}
+      />
+      {format === 'excel' ? (
+        <Path d="M8.5 10l3 4m0-4l-3 4M14 10v4" stroke={c.base} strokeWidth={1.4} fill="none" strokeLinecap="round" />
       ) : (
-        <>
-          <Rect x={3} y={4} width={18} height={16} rx={2.5} fill={c.soft} stroke={c.base} strokeWidth={1.6} />
-          <Path d="M6 17l4-5 3 3 2-2 3 4" stroke={c.base} strokeWidth={1.6} fill="none" />
-        </>
+        <Path d="M8 12h8M8 15h8M8 9h4" stroke={c.base} strokeWidth={1.4} fill="none" strokeLinecap="round" />
       )}
     </Svg>
   );

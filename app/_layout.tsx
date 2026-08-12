@@ -6,9 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { Platform } from 'react-native';
 import { ToastProvider } from '@/components/Toast';
-import { PdfRasterizerHost } from '@/components/PdfRasterizerHost';
 import { BrandedSplash } from '@/components/BrandedSplash';
 import { initDatabase } from '@/db/database';
 import { ensureDirs } from '@/services/files';
@@ -58,14 +56,11 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="upload" options={{ presentation: 'card' }} />
-            <Stack.Screen name="scan" options={{ animation: 'fade' }} />
             <Stack.Screen name="convert" />
             <Stack.Screen name="processing" options={{ gestureEnabled: false, animation: 'fade' }} />
             <Stack.Screen name="result" options={{ gestureEnabled: false, animation: 'fade' }} />
             <Stack.Screen name="editor" options={{ presentation: 'card' }} />
           </Stack>
-          {/* Off-screen PDF renderer (native only — WebView has no web build). */}
-          {Platform.OS !== 'web' && <PdfRasterizerHost />}
           {/* Branded launch overlay with the "powered by ian_ke" credit. */}
           {showBrand && <BrandedSplash onDone={() => setShowBrand(false)} />}
         </ToastProvider>

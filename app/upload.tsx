@@ -13,17 +13,12 @@ import { Chip } from '@/components/Chip';
 import { SourceGlyph } from '@/components/FormatIcon';
 import { useToast } from '@/components/Toast';
 import { useConversionStore } from '@/store/useConversionStore';
-import {
-  pickFromGallery,
-  pickDocuments,
-  capturePhoto,
-  PickerCancelled,
-  PermissionDenied,
-} from '@/services/picker';
+import { pickDocuments, PickerCancelled, PermissionDenied } from '@/services/picker';
 import { formatBytes } from '@/utils/format';
+import { sourceFormatLabel } from '@/utils/formats';
 import type { OutputFormat, SourceAsset } from '@/types';
 
-const SUPPORT = ['JPG', 'PNG', 'HEIC', 'PDF', 'DOCX'];
+const SUPPORT = ['PDF', 'DOCX', 'XLSX', 'CSV'];
 
 export default function Upload() {
   const theme = useTheme();
@@ -61,8 +56,6 @@ export default function Upload() {
 
   const actions: { key: string; icon: keyof typeof Ionicons.glyphMap; label: string; fn: () => void }[] = [
     { key: 'files', icon: 'folder-outline', label: 'Choose from Files', fn: () => handle(pickDocuments) },
-    { key: 'gallery', icon: 'images-outline', label: 'Choose from Gallery', fn: () => handle(pickFromGallery) },
-    { key: 'camera', icon: 'camera-outline', label: 'Take a Photo', fn: () => handle(capturePhoto) },
   ];
 
   return (
@@ -156,7 +149,7 @@ export default function Upload() {
                       {a.name}
                     </Text>
                     <Text variant="caption" color="muted">
-                      {a.sourceFormat === 'pdf' ? 'PDF' : 'Image'} · {formatBytes(a.size)}
+                      {sourceFormatLabel(a.sourceFormat)} · {formatBytes(a.size)}
                     </Text>
                   </View>
                   <Pressable hitSlop={10} onPress={() => removeAsset(a.id)}>

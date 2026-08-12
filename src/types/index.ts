@@ -5,8 +5,8 @@
 /** Output formats the app can generate. */
 export type OutputFormat = 'word' | 'excel' | 'pdf' | 'txt';
 
-/** Formats a user can feed in. */
-export type SourceFormat = 'image' | 'pdf' | 'word';
+/** Formats a user can feed in (document-only — no images/OCR). */
+export type SourceFormat = 'pdf' | 'word' | 'excel';
 
 /** Status of a conversion record. */
 export type ConversionStatus = 'completed' | 'failed' | 'processing';

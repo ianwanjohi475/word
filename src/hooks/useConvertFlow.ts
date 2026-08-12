@@ -1,22 +1,13 @@
 /**
- * Centralizes the "pick a source and start converting" flow used by the Home
- * dashboard, quick-action cards and the Upload screen. Handles permissions,
- * cancellation and routing so screens stay declarative.
+ * Centralizes the "pick a document and start converting" flow. Documents only
+ * (PDF / Word / Excel) — no images or camera.
  */
 import { useCallback } from 'react';
 import { useRouter } from 'expo-router';
-import type { OutputFormat, SourceAsset } from '@/types';
-import {
-  pickFromGallery,
-  pickDocuments,
-  capturePhoto,
-  PickerCancelled,
-  PermissionDenied,
-} from '@/services/picker';
+import type { OutputFormat } from '@/types';
+import { pickDocuments, PickerCancelled, PermissionDenied } from '@/services/picker';
 import { useConversionStore } from '@/store/useConversionStore';
 import { useToast } from '@/components/Toast';
-
-type Source = 'gallery' | 'documents' | 'camera';
 
 export function useConvertFlow() {
   const router = useRouter();
@@ -26,26 +17,21 @@ export function useConvertFlow() {
   const setCurrentDoc = useConversionStore((s) => s.setCurrentDoc);
 
   const run = useCallback(
-    async (source: Source, preselect?: OutputFormat, destination: 'convert' | 'upload' = 'convert') => {
+    async (preselect?: OutputFormat, destination: 'convert' | 'upload' = 'convert') => {
       try {
-        let assets: SourceAsset[] = [];
-        if (source === 'gallery') assets = await pickFromGallery();
-        else if (source === 'documents') assets = await pickDocuments();
-        else assets = await capturePhoto();
-
+        const assets = await pickDocuments();
         if (assets.length === 0) return;
 
         setAssets(assets);
         setCurrentDoc(null);
         if (preselect) setSelectedFormat(preselect);
 
-        if (destination === 'upload') {
-          router.push({ pathname: '/upload', params: preselect ? { target: preselect } : {} });
-        } else {
-          router.push({ pathname: '/convert', params: preselect ? { target: preselect } : {} });
-        }
+        router.push({
+          pathname: destination === 'upload' ? '/upload' : '/convert',
+          params: preselect ? { target: preselect } : {},
+        });
       } catch (e) {
-        if (e instanceof PickerCancelled) return; // user backed out — no noise
+        if (e instanceof PickerCancelled) return;
         if (e instanceof PermissionDenied) {
           toast.show(e.message, 'error');
           return;

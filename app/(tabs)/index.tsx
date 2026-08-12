@@ -19,10 +19,10 @@ import { greetingForNow } from '@/utils/format';
 import type { OutputFormat, SourceFormat } from '@/types';
 
 const QUICK: { source: SourceFormat; target: OutputFormat }[] = [
-  { source: 'image', target: 'word' },
-  { source: 'image', target: 'excel' },
+  { source: 'word', target: 'pdf' },
   { source: 'pdf', target: 'word' },
-  { source: 'pdf', target: 'excel' },
+  { source: 'word', target: 'excel' },
+  { source: 'excel', target: 'word' },
 ];
 
 export default function Home() {
@@ -85,26 +85,20 @@ export default function Home() {
             <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
               <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text variant="h2" style={{ color: '#fff' }}>
-                  Your document,{'\n'}editable in seconds
+                  Convert documents{'\n'}in seconds
                 </Text>
                 <Text variant="caption" style={{ color: 'rgba(255,255,255,0.82)', marginTop: 8, lineHeight: 19 }}>
-                  Scan or upload — get Word, Excel, PDF or text back.
+                  Word ⇆ PDF ⇆ Excel — fast, private, on your device.
                 </Text>
               </View>
-              <Ionicons name="documents" size={40} color="rgba(255,255,255,0.9)" />
+              <Ionicons name="swap-horizontal" size={40} color="rgba(255,255,255,0.9)" />
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+            <View style={{ marginTop: 18 }}>
               <Pressable onPress={() => router.push('/upload')} style={[styles.heroBtn, { backgroundColor: '#fff' }]}>
                 <Ionicons name="cloud-upload-outline" size={18} color={palette.accent} />
                 <Text variant="bodyStrong" style={{ color: palette.accent, marginLeft: 8 }}>
-                  Upload File
-                </Text>
-              </Pressable>
-              <Pressable onPress={() => router.push('/scan')} style={[styles.heroBtn, styles.heroBtnGhost]}>
-                <Ionicons name="scan-outline" size={18} color="#fff" />
-                <Text variant="bodyStrong" style={{ color: '#fff', marginLeft: 8 }}>
-                  Scan
+                  Upload a document
                 </Text>
               </Pressable>
             </View>
@@ -116,12 +110,12 @@ export default function Home() {
           <SectionHeader title="Quick conversions" />
           <View style={{ flexDirection: 'row', gap }}>
             <View style={{ flex: 1, gap }}>
-              <QuickActionCard {...QUICK[0]} onPress={() => run('gallery', QUICK[0].target)} />
-              <QuickActionCard {...QUICK[2]} onPress={() => run('documents', QUICK[2].target)} />
+              <QuickActionCard {...QUICK[0]} onPress={() => run(QUICK[0].target)} />
+              <QuickActionCard {...QUICK[2]} onPress={() => run(QUICK[2].target)} />
             </View>
             <View style={{ flex: 1, gap }}>
-              <QuickActionCard {...QUICK[1]} onPress={() => run('gallery', QUICK[1].target)} />
-              <QuickActionCard {...QUICK[3]} onPress={() => run('documents', QUICK[3].target)} />
+              <QuickActionCard {...QUICK[1]} onPress={() => run(QUICK[1].target)} />
+              <QuickActionCard {...QUICK[3]} onPress={() => run(QUICK[3].target)} />
             </View>
           </View>
         </View>

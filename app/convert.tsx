@@ -14,7 +14,7 @@ import { FormatIcon, SourceGlyph } from '@/components/FormatIcon';
 import { useConversionStore } from '@/store/useConversionStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { startOcr, subscribeOcr, type JobStatus } from '@/services/ocrController';
-import { OUTPUT_FORMATS, FORMAT_META } from '@/utils/formats';
+import { OUTPUT_FORMATS, FORMAT_META, sourceFormatLabel } from '@/utils/formats';
 import { formatBytes } from '@/utils/format';
 import type { OutputFormat } from '@/types';
 
@@ -64,7 +64,7 @@ export default function Convert() {
 
   const info = useMemo(() => {
     if (!active) return '';
-    return `${active.sourceFormat === 'pdf' ? 'PDF document' : 'Image'} · ${formatBytes(active.size)}`;
+    return `${sourceFormatLabel(active.sourceFormat)} document · ${formatBytes(active.size)}`;
   }, [active]);
 
   if (!active) {

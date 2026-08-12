@@ -21,10 +21,10 @@ import type { PipelineStage } from '@/types';
 import { stripExtension } from '@/utils/format';
 
 const STEPS: { key: PipelineStage; label: string }[] = [
-  { key: 'uploading', label: 'Uploading' },
-  { key: 'detecting', label: 'Detecting text' },
+  { key: 'uploading', label: 'Preparing document' },
+  { key: 'detecting', label: 'Reading content' },
   { key: 'layout', label: 'Understanding layout' },
-  { key: 'formatting', label: 'Formatting document' },
+  { key: 'formatting', label: 'Formatting output' },
   { key: 'saving', label: 'Creating file' },
 ];
 
@@ -217,7 +217,7 @@ export default function Processing() {
           <View style={[styles.scanBadge, { backgroundColor: theme.colors.accent }]}>
             <Ionicons name="scan" size={13} color="#fff" />
             <Text variant="micro" color="onAccent" style={{ marginLeft: 4 }}>
-              SCANNING
+              READING
             </Text>
           </View>
         </View>

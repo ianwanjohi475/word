@@ -7,8 +7,10 @@
  *   text layer (a scan), returns null and the pipeline falls back to OCR.
  */
 import mammoth from 'mammoth';
+import * as XLSX from 'xlsx-js-style';
 import type { DocumentModel } from '@/types';
 import { textToDocument } from './ocr/parseText';
+import { workbookToDocument } from './workbookToDocument';
 import { loadPdfJs, MAX_PDF_PAGES } from './pdfjsLoader.web';
 
 const g = globalThis as any;
@@ -19,6 +21,12 @@ export async function extractWord(uri: string): Promise<DocumentModel> {
   const text = (result?.value ?? '').trim();
   if (!text) throw new Error('This Word file has no extractable text.');
   return textToDocument(text);
+}
+
+export async function extractExcel(uri: string): Promise<DocumentModel> {
+  const arrayBuffer = await g.fetch(uri).then((r: any) => r.arrayBuffer());
+  const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+  return workbookToDocument(wb);
 }
 
 export async function extractPdfText(uri: string): Promise<DocumentModel | null> {

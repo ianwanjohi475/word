@@ -1,9 +1,7 @@
 /**
- * Input layer — turns image-picker / document-picker / camera results into the
- * app's `SourceAsset` shape. Imported files are copied into the work dir so they
- * survive the OS clearing the picker cache mid-flow.
+ * Input layer — documents only (PDF / Word / Excel). No images or camera; this
+ * is a pure document converter, so everything works locally with no OCR.
  */
-import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import type { SourceAsset, SourceFormat } from '@/types';
 import { uid } from '@/utils/id';
@@ -11,11 +9,13 @@ import { importSource } from './io';
 
 function detectSourceFormat(mime?: string, name?: string, uri?: string): SourceFormat {
   const hay = `${mime ?? ''} ${name ?? ''} ${uri ?? ''}`.toLowerCase();
+  if (hay.includes('spreadsheet') || hay.includes('.xlsx') || hay.includes('.xls') || hay.includes('excel') || hay.includes('.csv')) {
+    return 'excel';
+  }
   if (hay.includes('wordprocessingml') || hay.includes('.docx') || hay.includes('msword') || hay.includes('.doc')) {
     return 'word';
   }
-  if (hay.includes('pdf')) return 'pdf';
-  return 'image';
+  return 'pdf';
 }
 
 export class PickerCancelled extends Error {
@@ -32,46 +32,20 @@ export class PermissionDenied extends Error {
   }
 }
 
-/** Pick one or more images from the photo library. */
-export async function pickFromGallery(): Promise<SourceAsset[]> {
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) {
-    throw new PermissionDenied('Photo library access is needed to import images.');
-  }
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    allowsMultipleSelection: true,
-    quality: 0.9,
-    exif: false,
-  });
-  if (result.canceled) throw new PickerCancelled();
+/** Accepted input types for the document picker. */
+const ACCEPTED_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/csv',
+];
 
-  return Promise.all(
-    result.assets.map(async (a, i) => {
-      const name = a.fileName ?? `Photo ${i + 1}.jpg`;
-      const uri = await importSource(a.uri, name);
-      return {
-        id: uid('a_'),
-        uri,
-        previewUri: uri,
-        name,
-        size: a.fileSize,
-        mimeType: a.mimeType ?? 'image/jpeg',
-        sourceFormat: 'image' as const,
-      };
-    })
-  );
-}
-
-/** Pick documents (PDF or image files) from the system file browser. */
+/** Pick documents (PDF / Word / Excel) from the system file browser. */
 export async function pickDocuments(): Promise<SourceAsset[]> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: [
-      'application/pdf',
-      'image/*',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-    ],
+    type: ACCEPTED_TYPES,
     multiple: true,
     copyToCacheDirectory: true,
   });
@@ -84,7 +58,7 @@ export async function pickDocuments(): Promise<SourceAsset[]> {
       return {
         id: uid('a_'),
         uri,
-        previewUri: sourceFormat === 'image' ? uri : undefined,
+        previewUri: undefined,
         name: a.name,
         size: a.size ?? undefined,
         mimeType: a.mimeType ?? undefined,
@@ -92,48 +66,4 @@ export async function pickDocuments(): Promise<SourceAsset[]> {
       };
     })
   );
-}
-
-/** Capture a photo with the system camera (fallback / "Take a Photo"). */
-export async function capturePhoto(): Promise<SourceAsset[]> {
-  const perm = await ImagePicker.requestCameraPermissionsAsync();
-  if (!perm.granted) {
-    throw new PermissionDenied('Camera access is needed to scan documents.');
-  }
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ['images'],
-    quality: 0.9,
-    exif: false,
-  });
-  if (result.canceled) throw new PickerCancelled();
-
-  return Promise.all(
-    result.assets.map(async (a, i) => {
-      const name = a.fileName ?? `Scan ${Date.now()}-${i}.jpg`;
-      const uri = await importSource(a.uri, name);
-      return {
-        id: uid('a_'),
-        uri,
-        previewUri: uri,
-        name,
-        size: a.fileSize,
-        mimeType: a.mimeType ?? 'image/jpeg',
-        sourceFormat: 'image' as const,
-      };
-    })
-  );
-}
-
-/** Build a SourceAsset from a captured camera photo uri (custom scan screen). */
-export async function assetFromCapture(uri: string): Promise<SourceAsset> {
-  const name = `Scan ${Date.now()}.jpg`;
-  const stored = await importSource(uri, name);
-  return {
-    id: uid('a_'),
-    uri: stored,
-    previewUri: stored,
-    name,
-    mimeType: 'image/jpeg',
-    sourceFormat: 'image',
-  };
 }

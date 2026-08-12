@@ -23,20 +23,20 @@ const SLIDES: Slide[] = [
   {
     key: 'transform',
     art: <ArtTransform />,
-    title: 'Turn any document into editable files',
-    body: 'Snap or upload a document and Converta rebuilds it as a Word, Excel, PDF or text file you can actually edit.',
+    title: 'Convert documents in seconds',
+    body: 'Turn Word into PDF, PDF into Word, Excel into a table and back — all on your device, no account needed.',
   },
   {
-    key: 'scan',
+    key: 'formats',
     art: <ArtScan />,
-    title: 'Smart OCR that understands layout',
-    body: 'Advanced AI reads your images and PDFs, keeping headings, paragraphs and tables intact — not just raw text.',
+    title: 'Word ⇆ PDF ⇆ Excel',
+    body: 'Your headings, paragraphs and tables stay intact when you convert between formats.',
   },
   {
     key: 'edit',
     art: <ArtEdit />,
-    title: 'Review, edit and export anywhere',
-    body: 'Fix any detail, tweak tables cell by cell, then download or share. Everything stays private on your device.',
+    title: 'Review, edit and export',
+    body: 'Fix any detail, tweak tables cell by cell, then download or share. Everything stays private.',
   },
 ];
 

@@ -8,9 +8,11 @@
  *   device) — returns null so the pipeline falls back to rasterize + OCR.
  */
 import mammoth from 'mammoth';
+import * as XLSX from 'xlsx-js-style';
 import { Buffer } from 'buffer';
 import type { DocumentModel } from '@/types';
 import { textToDocument } from './ocr/parseText';
+import { workbookToDocument } from './workbookToDocument';
 import { readBase64 } from './files';
 
 export async function extractWord(uri: string): Promise<DocumentModel> {
@@ -20,6 +22,12 @@ export async function extractWord(uri: string): Promise<DocumentModel> {
   const text = (result?.value ?? '').trim();
   if (!text) throw new Error('This Word file has no extractable text.');
   return textToDocument(text);
+}
+
+export async function extractExcel(uri: string): Promise<DocumentModel> {
+  const base64 = await readBase64(uri);
+  const wb = XLSX.read(base64, { type: 'base64' });
+  return workbookToDocument(wb);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
