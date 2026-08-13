@@ -55,6 +55,18 @@ export const formatColors = {
   image: { base: '#0E8C6B', soft: '#E4F3EE', on: '#FFFFFF' },
 } as const;
 
+/** Gradient pairs for premium hero/CTA surfaces. */
+export const gradients = {
+  brand: ['#15B488', '#0C7C63'] as const,
+  brandDeep: ['#0F8C6B', '#0A5647'] as const,
+  word: ['#3B6FC0', '#2B579A'] as const,
+  excel: ['#27A866', '#1D7044'] as const,
+  pdf: ['#EC5A4E', '#D8362A'] as const,
+  txt: ['#828C9E', '#5B6472'] as const,
+  violet: ['#7A5AF0', '#5B3EE0'] as const,
+  amber: ['#F5A623', '#E5872B'] as const,
+} as const;
+
 export const spacing = {
   none: 0,
   xxs: 2,

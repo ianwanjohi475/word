@@ -172,6 +172,7 @@ export default function Upload() {
           <Button
             label={assets.length > 1 ? `Continue with ${assets.length} files` : 'Continue'}
             iconRight="arrow-forward"
+            gradient
             onPress={proceed}
           />
         </View>

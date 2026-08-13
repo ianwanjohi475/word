@@ -7,7 +7,7 @@
  */
 import { Platform, useColorScheme } from 'react-native';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { palette, spacing, radius, typography, motion, formatColors } from './tokens';
+import { palette, spacing, radius, typography, motion, formatColors, gradients } from './tokens';
 
 export type ThemeColors = {
   bg: string;
@@ -166,4 +166,4 @@ export function useTheme(): Theme {
   return isDark ? darkTheme : lightTheme;
 }
 
-export { palette, spacing, radius, typography, motion, formatColors };
+export { palette, spacing, radius, typography, motion, formatColors, gradients };

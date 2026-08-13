@@ -198,7 +198,7 @@ export default function Result() {
             </View>
           </View>
           <View style={{ height: theme.spacing.md }} />
-          <Button label="Download" icon="download-outline" loading={downloading} onPress={onDownload} />
+          <Button label="Download" icon="download-outline" gradient loading={downloading} onPress={onDownload} />
           <View style={{ height: theme.spacing.md }} />
           <Button
             label="Edit Result"

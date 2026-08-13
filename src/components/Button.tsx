@@ -1,10 +1,11 @@
 /** Primary/secondary/ghost/danger button with press + haptic micro-interaction. */
 import React, { useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { USE_NATIVE_DRIVER } from '@/utils/platform';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/theme';
+import { useTheme, gradients } from '@/theme';
 import { Text } from './Text';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -21,6 +22,8 @@ interface Props {
   disabled?: boolean;
   fullWidth?: boolean;
   haptic?: boolean;
+  /** Fill a primary button with the brand gradient. */
+  gradient?: boolean;
   style?: ViewStyle;
 }
 
@@ -35,6 +38,7 @@ export function Button({
   disabled,
   fullWidth = true,
   haptic = true,
+  gradient = false,
   style,
 }: Props) {
   const theme = useTheme();
@@ -80,7 +84,7 @@ export function Button({
           {
             height: heights[size],
             paddingHorizontal: paddings[size],
-            backgroundColor: bg[variant],
+            backgroundColor: gradient && variant === 'primary' ? 'transparent' : bg[variant],
             borderRadius: theme.radius.md,
             opacity: isDisabled ? 0.55 : 1,
             borderWidth: variant === 'secondary' ? 1 : 0,
@@ -88,6 +92,14 @@ export function Button({
           },
         ]}
       >
+        {gradient && variant === 'primary' && (
+          <LinearGradient
+            colors={gradients.brand}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         {loading ? (
           <ActivityIndicator color={variant === 'primary' || variant === 'danger' ? '#fff' : theme.colors.accent} />
         ) : (

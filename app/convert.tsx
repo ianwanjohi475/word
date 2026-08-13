@@ -232,6 +232,7 @@ export default function Convert() {
         <Button
           label={`Convert to ${FORMAT_META[chosen].label}`}
           icon="flash"
+          gradient
           onPress={() => router.push('/processing')}
         />
       </View>
