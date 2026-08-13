@@ -1,14 +1,14 @@
-/** First-launch onboarding: 3 skippable slides. Controlled carousel so the
- * primary button works identically on web and native (no reliance on momentum
- * scroll events, which don't fire with a mouse). */
-import React, { useRef, useState } from 'react';
+/** First-launch onboarding — premium, animated, shown once (persisted flag). */
+import React, { useEffect, useRef, useState } from 'react';
 import { View, ScrollView, useWindowDimensions, Pressable, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme';
 import { Text } from '@/components/Text';
 import { Button } from '@/components/Button';
+import { Logo } from '@/components/Logo';
 import { ArtTransform, ArtScan, ArtEdit } from '@/components/OnboardingArt';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
@@ -24,19 +24,19 @@ const SLIDES: Slide[] = [
     key: 'transform',
     art: <ArtTransform />,
     title: 'Convert documents in seconds',
-    body: 'Turn Word into PDF, PDF into Word, Excel into a table and back — all on your device, no account needed.',
+    body: 'Turn Word into PDF, PDF into Word, Excel into a table and back — instantly, on your device.',
   },
   {
     key: 'formats',
     art: <ArtScan />,
-    title: 'Word ⇆ PDF ⇆ Excel',
-    body: 'Your headings, paragraphs and tables stay intact when you convert between formats.',
+    title: 'Word · PDF · Excel',
+    body: 'Your headings, paragraphs and tables stay intact across every format. No account, no limits.',
   },
   {
     key: 'edit',
     art: <ArtEdit />,
-    title: 'Review, edit and export',
-    body: 'Fix any detail, tweak tables cell by cell, then download or share. Everything stays private.',
+    title: 'A full PDF editor, built in',
+    body: 'Add text, erase, highlight, add or remove pages — then save a clean new PDF.',
   },
 ];
 
@@ -47,7 +47,13 @@ export default function Onboarding() {
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
+  const onboardingComplete = useSettingsStore((s) => s.onboardingComplete);
   const complete = useSettingsStore((s) => s.completeOnboarding);
+
+  // Belt-and-suspenders: never show onboarding to a user who finished it once.
+  useEffect(() => {
+    if (onboardingComplete) router.replace('/(tabs)');
+  }, [onboardingComplete, router]);
 
   const finish = () => {
     complete();
@@ -60,10 +66,7 @@ export default function Onboarding() {
     scrollRef.current?.scrollTo({ x: clamped * width, animated: true });
   };
 
-  const next = () => {
-    if (index < SLIDES.length - 1) goTo(index + 1);
-    else finish();
-  };
+  const next = () => (index < SLIDES.length - 1 ? goTo(index + 1) : finish());
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -77,8 +80,10 @@ export default function Onboarding() {
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
-          <View style={[styles.brandDot, { backgroundColor: theme.colors.accent }]} />
-          <Text variant="bodyStrong">Converta</Text>
+          <Logo size={30} radius={9} />
+          <Text variant="bodyStrong" style={{ marginLeft: 8 }}>
+            Converta
+          </Text>
         </View>
         <Pressable onPress={finish} hitSlop={10} style={{ opacity: isLast ? 0 : 1 }} disabled={isLast}>
           <Text variant="captionStrong" color="muted">
@@ -97,35 +102,32 @@ export default function Onboarding() {
         style={{ flex: 1 }}
       >
         {SLIDES.map((item) => (
-          <View key={item.key} style={{ width, paddingHorizontal: theme.spacing.xxl }}>
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              <View
-                style={[
-                  styles.artCard,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-                  theme.shadows.md,
-                ]}
-              >
-                {item.art}
-              </View>
-              <Text variant="h1" style={{ marginBottom: theme.spacing.md }}>
-                {item.title}
-              </Text>
-              <Text variant="bodyLg" color="muted">
-                {item.body}
-              </Text>
-            </View>
+          <View key={item.key} style={{ width, paddingHorizontal: theme.spacing.xl }}>
+            <LinearGradient
+              colors={[theme.colors.accentSoft, theme.colors.surface] as [string, string]}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 0.8, y: 1 }}
+              style={[styles.panel, { borderColor: theme.colors.border }]}
+            >
+              {item.art}
+            </LinearGradient>
+            <Text variant="display" style={{ marginTop: theme.spacing.xxl }}>
+              {item.title}
+            </Text>
+            <Text variant="bodyLg" color="muted" style={{ marginTop: theme.spacing.md }}>
+              {item.body}
+            </Text>
           </View>
         ))}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: theme.spacing.xxl, paddingBottom: insets.bottom + theme.spacing.xl }}>
+      <View style={{ paddingHorizontal: theme.spacing.xl, paddingBottom: insets.bottom + theme.spacing.xl }}>
         <View style={styles.dots}>
           {SLIDES.map((s, i) => (
             <Pressable key={s.key} onPress={() => goTo(i)} hitSlop={8}>
               <View
                 style={{
-                  width: i === index ? 24 : 8,
+                  width: i === index ? 26 : 8,
                   height: 8,
                   borderRadius: 4,
                   marginHorizontal: 3,
@@ -135,12 +137,7 @@ export default function Onboarding() {
             </Pressable>
           ))}
         </View>
-        <Button
-          label={isLast ? 'Get Started' : 'Continue'}
-          onPress={next}
-          gradient
-          iconRight={isLast ? 'arrow-forward' : undefined}
-        />
+        <Button label={isLast ? 'Get Started' : 'Continue'} onPress={next} gradient iconRight={isLast ? 'arrow-forward' : undefined} />
       </View>
     </View>
   );
@@ -148,19 +145,18 @@ export default function Onboarding() {
 
 const styles = StyleSheet.create({
   topBar: {
-    height: 48,
+    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandDot: { width: 20, height: 20, borderRadius: 7 },
-  artCard: {
+  brandRow: { flexDirection: 'row', alignItems: 'center' },
+  panel: {
     borderRadius: 28,
     borderWidth: 1,
-    marginBottom: 40,
-    paddingVertical: 8,
+    marginTop: 8,
+    overflow: 'hidden',
   },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
 });
