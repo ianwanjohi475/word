@@ -3,7 +3,10 @@
  *
  * Add text anywhere, white-out (erase) content, highlight, add/delete pages,
  * then save a new PDF — all on-device with pdf.js (render) + pdf-lib (write).
- * No API key. Native shows a graceful "use the web app" message.
+ * No API key.
+ *
+ * Interaction: tapping a tool drops the element in the middle of the page,
+ * selected and ready to drag (robust — no reliance on web tap coordinates).
  */
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -31,8 +34,6 @@ import type { EditorPage, Overlay } from '@/services/pdfEditTypes';
 import { uid } from '@/utils/id';
 import { stripExtension } from '@/utils/format';
 
-type Tool = 'select' | 'text' | 'white' | 'highlight';
-
 const COLORS = ['#111827', '#E4483D', '#2E76E8', '#12A66F', '#E5942B', '#FFFFFF'];
 
 export default function PdfEdit() {
@@ -47,7 +48,6 @@ export default function PdfEdit() {
   const [pages, setPages] = useState<EditorPage[]>([]);
   const [overlays, setOverlays] = useState<Overlay[]>([]);
   const [current, setCurrent] = useState(0);
-  const [tool, setTool] = useState<Tool>('select');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [containerW, setContainerW] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -92,48 +92,29 @@ export default function PdfEdit() {
     if (selectedId === id) setSelectedId(null);
   };
 
-  const addAt = (xN: number, yN: number) => {
+  const addTool = (type: 'text' | 'white' | 'highlight') => {
     if (!page) return;
     const id = uid('ov_');
-    if (tool === 'text') {
-      setOverlays((prev) => [
-        ...prev,
-        { id, pageId: page.id, type: 'text', x: xN, y: yN, size: 0.025, color: '#111827', text: 'Text' },
-      ]);
-    } else if (tool === 'white') {
-      setOverlays((prev) => [
-        ...prev,
-        { id, pageId: page.id, type: 'white', x: Math.max(0, xN - 0.15), y: Math.max(0, yN - 0.02), w: 0.3, h: 0.045, color: '#FFFFFF' },
-      ]);
-    } else if (tool === 'highlight') {
-      setOverlays((prev) => [
-        ...prev,
-        { id, pageId: page.id, type: 'highlight', x: Math.max(0, xN - 0.15), y: Math.max(0, yN - 0.02), w: 0.3, h: 0.04, color: '#FFE45C' },
-      ]);
+    if (type === 'text') {
+      setOverlays((prev) => [...prev, { id, pageId: page.id, type: 'text', x: 0.12, y: 0.14, size: 0.03, color: '#111827', text: 'New text' }]);
+    } else if (type === 'white') {
+      setOverlays((prev) => [...prev, { id, pageId: page.id, type: 'white', x: 0.3, y: 0.42, w: 0.4, h: 0.06, color: '#FFFFFF' }]);
+    } else {
+      setOverlays((prev) => [...prev, { id, pageId: page.id, type: 'highlight', x: 0.3, y: 0.42, w: 0.4, h: 0.05, color: '#FFE45C' }]);
     }
     setSelectedId(id);
-    setTool('select');
-  };
-
-  const onPagePress = (e: { nativeEvent: { locationX: number; locationY: number } }) => {
-    if (tool === 'select') {
-      setSelectedId(null);
-      return;
-    }
-    const xN = Math.min(1, Math.max(0, e.nativeEvent.locationX / displayW));
-    const yN = Math.min(1, Math.max(0, e.nativeEvent.locationY / displayH));
-    addAt(xN, yN);
   };
 
   const addBlankPage = () => {
     const ref = page ?? { width: 595, height: 842 };
     const newPage: EditorPage = { id: uid('pg_'), kind: 'blank', width: ref.width, height: ref.height };
     setPages((prev) => {
-      const next = [...prev];
-      next.splice(current + 1, 0, newPage);
-      return next;
+      const nextArr = [...prev];
+      nextArr.splice(current + 1, 0, newPage);
+      return nextArr;
     });
     setCurrent((c) => c + 1);
+    setSelectedId(null);
   };
 
   const deletePage = () => {
@@ -142,6 +123,7 @@ export default function PdfEdit() {
     setOverlays((prev) => prev.filter((o) => o.pageId !== pid));
     setPages((prev) => prev.filter((_, i) => i !== current));
     setCurrent((c) => Math.max(0, c - 1));
+    setSelectedId(null);
   };
 
   const onSave = async () => {
@@ -195,40 +177,25 @@ export default function PdfEdit() {
         title: 'Edit PDF',
         showBack: true,
         right: (
-          <Pressable onPress={onSave} hitSlop={8} disabled={saving}>
-            {saving ? (
-              <ActivityIndicator color={theme.colors.accent} />
-            ) : (
-              <Text variant="captionStrong" color="accent">
-                Save
-              </Text>
-            )}
+          <Pressable onPress={onSave} hitSlop={8} disabled={saving} style={[styles.saveBtn, { backgroundColor: theme.colors.accent }]}>
+            {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text variant="captionStrong" color="onAccent">Save</Text>}
           </Pressable>
         ),
       }}
     >
       {/* Page nav */}
       <View style={[styles.pageNav, { borderBottomColor: theme.colors.border }]}>
-        <Pressable onPress={() => setCurrent((c) => Math.max(0, c - 1))} disabled={current === 0} hitSlop={8} style={{ opacity: current === 0 ? 0.35 : 1 }}>
+        <Pressable onPress={() => { setCurrent((c) => Math.max(0, c - 1)); setSelectedId(null); }} disabled={current === 0} hitSlop={8} style={{ opacity: current === 0 ? 0.35 : 1 }}>
           <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
         </Pressable>
-        <Text variant="captionStrong">
-          Page {current + 1} of {pages.length}
-        </Text>
-        <Pressable
-          onPress={() => setCurrent((c) => Math.min(pages.length - 1, c + 1))}
-          disabled={current === pages.length - 1}
-          hitSlop={8}
-          style={{ opacity: current === pages.length - 1 ? 0.35 : 1 }}
-        >
+        <Text variant="captionStrong">Page {current + 1} / {pages.length}</Text>
+        <Pressable onPress={() => { setCurrent((c) => Math.min(pages.length - 1, c + 1)); setSelectedId(null); }} disabled={current === pages.length - 1} hitSlop={8} style={{ opacity: current === pages.length - 1 ? 0.35 : 1 }}>
           <Ionicons name="chevron-forward" size={22} color={theme.colors.text} />
         </Pressable>
         <View style={{ flex: 1 }} />
         <Pressable onPress={addBlankPage} hitSlop={8} style={styles.navAction}>
           <Ionicons name="add" size={18} color={theme.colors.accent} />
-          <Text variant="micro" color="accent">
-            PAGE
-          </Text>
+          <Text variant="micro" color="accent">PAGE</Text>
         </Pressable>
         <Pressable onPress={deletePage} hitSlop={8} style={styles.navAction} disabled={pages.length <= 1}>
           <Ionicons name="trash-outline" size={16} color={pages.length <= 1 ? theme.colors.textFaint : theme.colors.danger} />
@@ -239,8 +206,7 @@ export default function PdfEdit() {
         <View onLayout={(e: LayoutChangeEvent) => setContainerW(e.nativeEvent.layout.width)}>
           {displayW > 0 && (
             <View style={[styles.pageWrap, { width: displayW, height: displayH, borderColor: theme.colors.border }]}>
-              {/* Background */}
-              <Pressable style={StyleSheet.absoluteFill} onPress={onPagePress}>
+              <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedId(null)}>
                 {page.kind === 'orig' && page.dataUrl ? (
                   <Image source={{ uri: page.dataUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
                 ) : (
@@ -248,7 +214,6 @@ export default function PdfEdit() {
                 )}
               </Pressable>
 
-              {/* Overlays */}
               {pageOverlays.map((ov) => (
                 <DraggableOverlay
                   key={ov.id}
@@ -264,12 +229,9 @@ export default function PdfEdit() {
             </View>
           )}
         </View>
-
-        {tool !== 'select' && (
-          <Text variant="caption" color="accent" center style={{ marginTop: 12 }}>
-            Tap the page to place {tool === 'text' ? 'text' : tool === 'white' ? 'an erase box' : 'a highlight'}
-          </Text>
-        )}
+        <Text variant="caption" color="muted" center style={{ marginTop: 12 }}>
+          Add items with the tools below, then drag to position. Tap an item to edit it.
+        </Text>
       </ScrollView>
 
       {/* Selected overlay controls */}
@@ -287,17 +249,11 @@ export default function PdfEdit() {
               />
               <View style={styles.panelRow}>
                 <StepBtn icon="remove" onPress={() => updateOverlay(selected.id, { size: Math.max(0.012, selected.size - 0.005) })} />
-                <Text variant="captionStrong" style={{ marginHorizontal: 8 }}>
-                  Size
-                </Text>
-                <StepBtn icon="add" onPress={() => updateOverlay(selected.id, { size: Math.min(0.12, selected.size + 0.005) })} />
+                <Text variant="captionStrong" style={{ marginHorizontal: 8 }}>Size</Text>
+                <StepBtn icon="add" onPress={() => updateOverlay(selected.id, { size: Math.min(0.14, selected.size + 0.005) })} />
                 <View style={{ width: 12 }} />
                 {COLORS.map((c) => (
-                  <Pressable
-                    key={c}
-                    onPress={() => updateOverlay(selected.id, { color: c })}
-                    style={[styles.swatch, { backgroundColor: c, borderColor: selected.color === c ? theme.colors.accent : theme.colors.border, borderWidth: selected.color === c ? 2 : 1 }]}
-                  />
+                  <Pressable key={c} onPress={() => updateOverlay(selected.id, { color: c })} style={[styles.swatch, { backgroundColor: c, borderColor: selected.color === c ? theme.colors.accent : theme.colors.border, borderWidth: selected.color === c ? 2 : 1 }]} />
                 ))}
                 <View style={{ flex: 1 }} />
                 <Pressable onPress={() => removeOverlay(selected.id)} hitSlop={8}>
@@ -308,12 +264,12 @@ export default function PdfEdit() {
           ) : (
             <View style={styles.panelRow}>
               <Text variant="captionStrong">Width</Text>
-              <StepBtn icon="remove" onPress={() => updateOverlay(selected.id, { w: Math.max(0.05, (selected as any).w - 0.03) })} />
-              <StepBtn icon="add" onPress={() => updateOverlay(selected.id, { w: Math.min(1, (selected as any).w + 0.03) })} />
+              <StepBtn icon="remove" onPress={() => updateOverlay(selected.id, { w: Math.max(0.05, (selected as { w: number }).w - 0.03) })} />
+              <StepBtn icon="add" onPress={() => updateOverlay(selected.id, { w: Math.min(1, (selected as { w: number }).w + 0.03) })} />
               <View style={{ width: 10 }} />
               <Text variant="captionStrong">Height</Text>
-              <StepBtn icon="remove" onPress={() => updateOverlay(selected.id, { h: Math.max(0.02, (selected as any).h - 0.02) })} />
-              <StepBtn icon="add" onPress={() => updateOverlay(selected.id, { h: Math.min(1, (selected as any).h + 0.02) })} />
+              <StepBtn icon="remove" onPress={() => updateOverlay(selected.id, { h: Math.max(0.02, (selected as { h: number }).h - 0.02) })} />
+              <StepBtn icon="add" onPress={() => updateOverlay(selected.id, { h: Math.min(1, (selected as { h: number }).h + 0.02) })} />
               <View style={{ flex: 1 }} />
               <Pressable onPress={() => removeOverlay(selected.id)} hitSlop={8}>
                 <Ionicons name="trash-outline" size={20} color={theme.colors.danger} />
@@ -326,21 +282,17 @@ export default function PdfEdit() {
       {/* Tool bar */}
       <View style={[styles.toolbar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
         {([
-          { key: 'select', icon: 'hand-left-outline', label: 'Move' },
-          { key: 'text', icon: 'text-outline', label: 'Text' },
-          { key: 'white', icon: 'square-outline', label: 'Erase' },
-          { key: 'highlight', icon: 'color-fill-outline', label: 'Mark' },
-        ] as { key: Tool; icon: keyof typeof Ionicons.glyphMap; label: string }[]).map((t) => {
-          const active = tool === t.key;
-          return (
-            <Pressable key={t.key} onPress={() => setTool(t.key)} style={[styles.tool, active && { backgroundColor: theme.colors.accentSoft }]}>
-              <Ionicons name={t.icon} size={20} color={active ? theme.colors.accent : theme.colors.textMuted} />
-              <Text variant="micro" color={active ? 'accent' : 'muted'} style={{ marginTop: 3 }}>
-                {t.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+          { key: 'text', icon: 'text', label: 'Add text' },
+          { key: 'white', icon: 'scan-outline', label: 'Erase' },
+          { key: 'highlight', icon: 'color-fill', label: 'Highlight' },
+        ] as { key: 'text' | 'white' | 'highlight'; icon: keyof typeof Ionicons.glyphMap; label: string }[]).map((t) => (
+          <Pressable key={t.key} onPress={() => addTool(t.key)} style={styles.tool}>
+            <View style={[styles.toolChip, { backgroundColor: theme.colors.accentSoft }]}>
+              <Ionicons name={t.icon} size={20} color={theme.colors.accent} />
+            </View>
+            <Text variant="micro" color="muted" style={{ marginTop: 4 }}>{t.label}</Text>
+          </Pressable>
+        ))}
       </View>
     </Screen>
   );
@@ -349,24 +301,13 @@ export default function PdfEdit() {
 function StepBtn({ icon, onPress }: { icon: keyof typeof Ionicons.glyphMap; onPress: () => void }) {
   const theme = useTheme();
   return (
-    <Pressable
-      onPress={onPress}
-      style={{ width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surfaceAlt, marginHorizontal: 3 }}
-    >
+    <Pressable onPress={onPress} style={{ width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surfaceAlt, marginHorizontal: 3 }}>
       <Ionicons name={icon} size={16} color={theme.colors.text} />
     </Pressable>
   );
 }
 
-function DraggableOverlay({
-  overlay,
-  displayW,
-  displayH,
-  selected,
-  onSelect,
-  onMove,
-  accent,
-}: {
+interface DragProps {
   overlay: Overlay;
   displayW: number;
   displayH: number;
@@ -374,26 +315,32 @@ function DraggableOverlay({
   onSelect: () => void;
   onMove: (x: number, y: number) => void;
   accent: string;
-}) {
-  const start = useRef({ x: overlay.x, y: overlay.y });
+}
+
+function DraggableOverlay(props: DragProps) {
+  const { overlay, displayW, displayH, selected, accent } = props;
+  // Keep the latest props in a ref so the (once-created) PanResponder handlers
+  // never use stale values.
+  const ref = useRef(props);
+  ref.current = props;
+  const start = useRef({ x: 0, y: 0 });
+
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2,
       onPanResponderGrant: () => {
-        onSelect();
-        start.current = { x: overlay.x, y: overlay.y };
+        ref.current.onSelect();
+        start.current = { x: ref.current.overlay.x, y: ref.current.overlay.y };
       },
-      onPanResponderMove: (_e, gesture) => {
-        const nx = Math.min(1, Math.max(0, start.current.x + gesture.dx / displayW));
-        const ny = Math.min(1, Math.max(0, start.current.y + gesture.dy / displayH));
-        onMove(nx, ny);
+      onPanResponderMove: (_e, g) => {
+        const p = ref.current;
+        const nx = Math.min(1, Math.max(0, start.current.x + g.dx / p.displayW));
+        const ny = Math.min(1, Math.max(0, start.current.y + g.dy / p.displayH));
+        p.onMove(nx, ny);
       },
     })
   ).current;
-
-  // Keep the start ref current between drags.
-  start.current = { x: overlay.x, y: overlay.y };
 
   const left = overlay.x * displayW;
   const top = overlay.y * displayH;
@@ -401,14 +348,8 @@ function DraggableOverlay({
   if (overlay.type === 'text') {
     const fontSize = overlay.size * displayH;
     return (
-      <View
-        {...pan.panHandlers}
-        style={[
-          styles.overlayBase,
-          { left, top, borderColor: selected ? accent : 'transparent', borderWidth: selected ? 1.5 : 0, paddingHorizontal: 2 },
-        ]}
-      >
-        <Text style={{ fontSize, lineHeight: fontSize * 1.2, color: overlay.color }}>{overlay.text || ' '}</Text>
+      <View {...pan.panHandlers} style={[styles.overlayBase, { left, top, borderColor: selected ? accent : 'transparent', borderWidth: selected ? 1.5 : 0, paddingHorizontal: 2 }]}>
+        <Text style={{ fontSize, lineHeight: fontSize * 1.25, color: overlay.color }}>{overlay.text || ' '}</Text>
       </View>
     );
   }
@@ -423,8 +364,8 @@ function DraggableOverlay({
           top,
           width: overlay.w * displayW,
           height: overlay.h * displayH,
-          backgroundColor: overlay.type === 'highlight' ? 'rgba(255,228,92,0.4)' : '#FFFFFF',
-          borderColor: selected ? accent : overlay.type === 'white' ? '#E2E6EA' : 'transparent',
+          backgroundColor: overlay.type === 'highlight' ? 'rgba(255,228,92,0.45)' : '#FFFFFF',
+          borderColor: selected ? accent : overlay.type === 'white' ? '#D7DBE0' : 'transparent',
           borderWidth: selected ? 1.5 : overlay.type === 'white' ? 1 : 0,
         },
       ]}
@@ -434,6 +375,7 @@ function DraggableOverlay({
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  saveBtn: { paddingHorizontal: 16, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   pageNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -444,16 +386,12 @@ const styles = StyleSheet.create({
   },
   navAction: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 8 },
   pageWrap: { borderWidth: 1, borderRadius: 6, overflow: 'hidden', backgroundColor: '#fff', alignSelf: 'center' },
-  overlayBase: { position: 'absolute', borderRadius: 2 },
+  overlayBase: { position: 'absolute', borderRadius: 2, minWidth: 12, minHeight: 12 },
   panel: { borderTopWidth: StyleSheet.hairlineWidth, padding: 12 },
   panelRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap', gap: 4 },
   textInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, minHeight: 40 },
   swatch: { width: 24, height: 24, borderRadius: 12, marginHorizontal: 2 },
-  toolbar: {
-    flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-  },
-  tool: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 12, marginHorizontal: 3 },
+  toolbar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 10, paddingHorizontal: 8 },
+  tool: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  toolChip: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });
