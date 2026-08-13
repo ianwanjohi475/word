@@ -35,8 +35,8 @@ const SLIDES: Slide[] = [
   {
     key: 'edit',
     art: <ArtEdit />,
-    title: 'A full PDF editor, built in',
-    body: 'Add text, erase, highlight, add or remove pages — then save a clean new PDF.',
+    title: 'Review, edit and export',
+    body: 'Fix the extracted text, tweak tables cell by cell, then download or share in any format.',
   },
 ];
 

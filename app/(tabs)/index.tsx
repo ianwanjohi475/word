@@ -17,9 +17,6 @@ import { RecentFileCard } from '@/components/RecentFileCard';
 import { FileRow } from '@/components/FileRow';
 import { EmptyState } from '@/components/EmptyState';
 import { useConvertFlow } from '@/hooks/useConvertFlow';
-import { useConversionStore } from '@/store/useConversionStore';
-import { pickDocuments, PickerCancelled } from '@/services/picker';
-import { useToast } from '@/components/Toast';
 import { useFilesStore } from '@/store/useFilesStore';
 import { greetingForNow } from '@/utils/format';
 
@@ -28,8 +25,6 @@ export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { run } = useConvertFlow();
-  const toast = useToast();
-  const setAssets = useConversionStore((s) => s.setAssets);
   const files = useFilesStore((s) => s.files);
   const refresh = useFilesStore((s) => s.refresh);
   const loading = useFilesStore((s) => s.loading);
@@ -39,22 +34,6 @@ export default function Home() {
       refresh();
     }, [refresh])
   );
-
-  const editPdf = async () => {
-    try {
-      const picked = await pickDocuments();
-      const pdf = picked.find((a) => a.sourceFormat === 'pdf');
-      if (!pdf) {
-        if (picked.length) toast.show('Pick a PDF file to edit.', 'error');
-        return;
-      }
-      setAssets([pdf]);
-      router.push('/pdfedit');
-    } catch (e) {
-      if (e instanceof PickerCancelled) return;
-      toast.show('Could not open that file.', 'error');
-    }
-  };
 
   const completed = files.filter((f) => f.status === 'completed');
   const recent = completed.slice(0, 8);
@@ -109,19 +88,13 @@ export default function Home() {
               Convert & edit{'\n'}documents
             </Text>
             <Text variant="caption" style={{ color: 'rgba(255,255,255,0.85)', marginTop: 6, lineHeight: 19 }}>
-              Word ⇆ PDF ⇆ Excel and a full PDF editor — all on your device.
+              Word ⇆ PDF ⇆ Excel — fast, private, on your device.
             </Text>
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+            <View style={{ marginTop: 18 }}>
               <Pressable onPress={() => router.push('/upload')} style={[styles.heroBtn, { backgroundColor: '#fff' }]}>
                 <Ionicons name="swap-horizontal" size={18} color="#0B6E55" />
                 <Text variant="bodyStrong" style={{ color: '#0B6E55', marginLeft: 8 }}>
-                  Convert
-                </Text>
-              </Pressable>
-              <Pressable onPress={editPdf} style={[styles.heroBtn, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
-                <Ionicons name="create-outline" size={18} color="#fff" />
-                <Text variant="bodyStrong" style={{ color: '#fff', marginLeft: 8 }}>
-                  Edit PDF
+                  Upload a document
                 </Text>
               </Pressable>
             </View>
@@ -145,7 +118,7 @@ export default function Home() {
             </View>
             <View style={{ flexDirection: 'row', gap }}>
               <ToolTile icon="grid" title="Word → Excel" subtitle="Pull out tables" colors={gradients.excel} onPress={() => run('excel')} />
-              <ToolTile icon="create" title="Edit a PDF" subtitle="Text, erase, sign" colors={gradients.violet} onPress={editPdf} />
+              <ToolTile icon="document-attach" title="PDF → Excel" subtitle="Tables from PDF" colors={gradients.violet} onPress={() => run('excel')} />
             </View>
           </View>
         </View>

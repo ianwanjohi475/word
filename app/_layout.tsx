@@ -56,7 +56,6 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="upload" options={{ presentation: 'card' }} />
-            <Stack.Screen name="pdfedit" options={{ presentation: 'card' }} />
             <Stack.Screen name="convert" />
             <Stack.Screen name="processing" options={{ gestureEnabled: false, animation: 'fade' }} />
             <Stack.Screen name="result" options={{ gestureEnabled: false, animation: 'fade' }} />
